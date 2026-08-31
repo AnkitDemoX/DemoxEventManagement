@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>📊 Dashboard</h1>
+    <p>Welcome back! Here's an overview of your events.</p>
+</div>
+
+<!-- Quick Stats -->
+<div class="grid">
+    <div class="card">
+        <h3>Total Events</h3>
+        <p style="font-size: 2em; color: #0066CC; font-weight: bold;">{{ total_events }}</p>
+    </div>
+
+    <div class="card">
+        <h3>Upcoming Events</h3>
+        <p style="font-size: 2em; color: #28a745; font-weight: bold;">{{ upcoming_events|length }}</p>
+    </div>
+
+    <div class="card">
+        <h3>Past Events</h3>
+        <p style="font-size: 2em; color: #dc3545; font-weight: bold;">{{ past_events|length }}</p>
+    </div>
+</div>
+
+<!-- Upcoming Events -->
+<div class="card">
+    <h3>📅 Upcoming Events (Next 5)</h3>
+
+    {% if upcoming_events %}
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid #ddd;">
+                    <th style="text-align: left; padding: 12px; color: #0066CC;">Client</th>
+                    <th style="text-align: left; padding: 12px; color: #0066CC;">Date</th>
+                    <th style="text-align: left; padding: 12px; color: #0066CC;">Location</th>
+                    <th style="text-align: left; padding: 12px; color: #0066CC;">Status</th>
+                    <th style="text-align: left; padding: 12px; color: #0066CC;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in upcoming_events %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px; font-weight: 600;">{{ event.client_name }}</td>
+                    <td style="padding: 12px;">{{ event.event_date }}</td>
+                    <td style="padding: 12px;">{{ event.location }}</td>
+                    <td style="padding: 12px;">
+                        <span class="badge {% if event.status == 'confirmed' %}badge-confirmed{% else %}badge-tentative{% endif %}">
+                            {{ event.status|title }}
+                        </span>
+                    </td>
+                    <td style="padding: 12px;">
+                        <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-sm btn-primary">View</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="color: #666; text-align: center; padding: 20px;">No upcoming events. <a href="{{ url_for('new_event') }}">Create one!</a></p>
+    {% endif %}
+</div>
+
+<!-- Past Events -->
+<div class="card">
+    <h3>✅ Past Events (Last 5)</h3>
+
+    {% if past_events %}
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid #ddd;">
+                    <th style="text-align: left; padding: 12px; color: #0066CC;">Client</th>
+                    <th style="text-align: left; padding: 12px; color: #0066CC;">Date</th>
+                    <th style="text-align: left; padding: 12px; color: #0066CC;">Location</th>
+                    <th style="text-align: left; padding: 12px; color: #0066CC;">Status</th>
+                    <th style="text-align: left; padding: 12px; color: #0066CC;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in past_events %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px; font-weight: 600;">{{ event.client_name }}</td>
+                    <td style="padding: 12px;">{{ event.event_date }}</td>
+                    <td style="padding: 12px;">{{ event.location }}</td>
+                    <td style="padding: 12px;">
+                        <span class="badge {% if event.status == 'confirmed' %}badge-confirmed{% else %}badge-tentative{% endif %}">
+                            {{ event.status|title }}
+                        </span>
+                    </td>
+                    <td style="padding: 12px;">
+                        <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-sm btn-primary">View</a>
+                        <a href="{{ url_for('launch_debrief', event_id=event.id) }}" class="btn btn-sm btn-success">📄 Debrief</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="color: #666; text-align: center; padding: 20px;">No past events yet.</p>
+    {% endif %}
+</div>
+
+<!-- Quick Actions -->
+<div class="card" style="text-align: center;">
+    <h3>Quick Actions</h3>
+    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 15px;">
+        <a href="{{ url_for('new_event') }}" class="btn btn-primary">➕ Create New Event</a>
+        <a href="{{ url_for('calendar_view') }}" class="btn btn-primary">📅 View Calendar</a>
+        <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">⚙️ Manage Admins</a>
+    </div>
+</div>
+
+{% endblock %}

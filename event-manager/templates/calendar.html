@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Calendar{% endblock %}
+
+{% block extra_css %}
+<style>
+    .calendar-container {
+        background: white;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .calendar-header h2 {
+        color: #0066CC;
+        font-size: 1.8em;
+    }
+
+    .calendar-nav {
+        display: flex;
+        gap: 15px;
+    }
+
+    .calendar-nav a {
+        padding: 10px 20px;
+        background: #0066CC;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: 600;
+        transition: background 0.3s;
+    }
+
+    .calendar-nav a:hover {
+        background: #004B99;
+    }
+
+    /* Calendar Grid */
+    .calendar-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+    .calendar-table th {
+        background: #f0f0f0;
+        color: #0066CC;
+        padding: 12px;
+        text-align: center;
+        font-weight: 600;
+        border: 1px solid #ddd;
+    }
+
+    .calendar-table td {
+        width: 14.28%;
+        height: 120px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        vertical-align: top;
+        background: white;
+        transition: background 0.3s;
+    }
+
+    .calendar-table td:hover {
+        background: #f9f9f9;
+    }
+
+    .calendar-table td.other-month {
+        background: #f5f5f5;
+        color: #999;
+    }
+
+    .calendar-table td.today {
+        background: #e8f4ff;
+        font-weight: bold;
+    }
+
+    .day-number {
+        font-weight: 600;
+        color: #0066CC;
+        margin-bottom: 5px;
+    }
+
+    .events-in-day {
+        font-size: 0.85em;
+        max-height: 80px;
+        overflow-y: auto;
+    }
+
+    .day-event {
+        background: #e8f4ff;
+        color: #0066CC;
+        padding: 3px 6px;
+        margin: 3px 0;
+        border-radius: 3px;
+        font-size: 0.8em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .day-event:hover {
+        background: #0066CC;
+        color: white;
+    }
+
+    .day-event.confirmed {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .day-event.confirmed:hover {
+        background: #28a745;
+        color: white;
+    }
+
+    .day-event.tentative {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .day-event.tentative:hover {
+        background: #ffc107;
+        color: white;
+    }
+
+    /* Legend */
+    .legend {
+        display: flex;
+        gap: 20px;
+        margin-top: 20px;
+        padding: 15px;
+        background: #f9f9f9;
+        border-radius: 4px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 3px;
+    }
+
+    .legend-color.confirmed {
+        background: #d4edda;
+    }
+
+    .legend-color.tentative {
+        background: #fff3cd;
+    }
+
+    @media (max-width: 768px) {
+        .calendar-table td {
+            height: 100px;
+            padding: 8px;
+            font-size: 0.9em;
+        }
+
+        .calendar-header {
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .calendar-nav {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>📅 Event Calendar</h1>
+    <p>View all events in a monthly calendar format.</p>
+</div>
+
+<div class="calendar-container">
+    <div class="calendar-header">
+        <h2>{{ month_name }} {{ year }}</h2>
+        <div class="calendar-nav">
+            <a href="{{ url_for('calendar_view', year=prev_year, month=prev_month) }}">&larr; Previous</a>
+            <a href="{{ url_for('calendar_view') }}">Today</a>
+            <a href="{{ url_for('calendar_view', year=next_year, month=next_month) }}">Next &rarr;</a>
+        </div>
+    </div>
+
+    <!-- Calendar Table -->
+    <table class="calendar-table">
+        <thead>
+            <tr>
+                <th>Sun</th>
+                <th>Mon</th>
+                <th>Tue</th>
+                <th>Wed</th>
+                <th>Thu</th>
+                <th>Fri</th>
+                <th>Sat</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for week in calendar %}
+            <tr>
+                {% for day in week %}
+                <td class="{% if day == 0 %}other-month{% endif %}">
+                    {% if day != 0 %}
+                        <div class="day-number">{{ day }}</div>
+
+                        {% set date_str = '%04d-%02d-%02d'|format(year, month, day) %}
+                        {% if date_str in events_by_date %}
+                            <div class="events-in-day">
+                                {% for event in events_by_date[date_str] %}
+                                    <a href="{{ url_for('event_detail', event_id=event.id) }}" class="day-event {{ event.status }}">
+                                        📌 {{ event.client_name[:15] }}
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Legend -->
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color confirmed"></div>
+            <span>Confirmed</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color tentative"></div>
+            <span>Tentative</span>
+        </div>
+    </div>
+
+    <!-- Quick Action -->
+    <div style="margin-top: 20px; text-align: center;">
+        <a href="{{ url_for('new_event') }}" class="btn btn-primary">➕ Create New Event</a>
+    </div>
+</div>
+
+{% endblock %}

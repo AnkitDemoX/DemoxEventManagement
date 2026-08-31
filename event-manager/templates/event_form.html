@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}{% if event %}Edit{% else %}Create{% endif %} Event{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>{% if event %}✏️ Edit Event{% else %}➕ Create New Event{% endif %}</h1>
+    <p>{% if event %}Update event details below.{% else %}Fill in the details to create a new event.{% endif %}</p>
+</div>
+
+<div class="card" style="max-width: 600px;">
+    <form method="POST">
+        <!-- Client Name -->
+        <div class="form-group">
+            <label for="client_name">Client Name *</label>
+            <input type="text"
+                   id="client_name"
+                   name="client_name"
+                   value="{{ event.client_name if event else '' }}"
+                   required
+                   placeholder="e.g., Tenaga Nasional Berhad">
+        </div>
+
+        <!-- Event Date -->
+        <div class="form-group">
+            <label for="event_date">Event Date *</label>
+            <input type="date"
+                   id="event_date"
+                   name="event_date"
+                   value="{{ event.event_date if event else '' }}"
+                   required>
+        </div>
+
+        <!-- Location -->
+        <div class="form-group">
+            <label for="location">Location</label>
+            <input type="text"
+                   id="location"
+                   name="location"
+                   value="{{ event.location if event else '' }}"
+                   placeholder="e.g., Kuala Lumpur, Malaysia">
+        </div>
+
+        <!-- Experiences -->
+        <div class="form-group">
+            <label for="experiences">Experiences & Notes</label>
+            <textarea id="experiences"
+                      name="experiences"
+                      placeholder="Describe the session, what was covered, key takeaways, observations...">{{ event.experiences if event else '' }}</textarea>
+        </div>
+
+        <!-- Status -->
+        <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                <option value="tentative" {% if not event or event.status == 'tentative' %}selected{% endif %}>
+                    Tentative (📝 Planning/Scheduled)
+                </option>
+                <option value="confirmed" {% if event and event.status == 'confirmed' %}selected{% endif %}>
+                    Confirmed (✅ Locked In)
+                </option>
+            </select>
+        </div>
+
+        <!-- Form Actions -->
+        <div style="display: flex; gap: 10px; margin-top: 30px;">
+            <button type="submit" class="btn btn-primary" style="flex: 1;">
+                {% if event %}💾 Save Changes{% else %}✨ Create Event{% endif %}
+            </button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary" style="flex: 1; text-align: center;">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<!-- Help Text -->
+<div class="card" style="max-width: 600px; margin-top: 20px; background: #f0f4ff; border-left: 4px solid #0066CC;">
+    <h3 style="color: #0066CC; margin-bottom: 10px;">ℹ️ Tips</h3>
+    <ul style="margin-left: 20px; color: #333; line-height: 1.6;">
+        <li><strong>Client Name:</strong> The organization or client name (required)</li>
+        <li><strong>Event Date:</strong> When the event will take place (required)</li>
+        <li><strong>Location:</strong> Physical or virtual location of the event</li>
+        <li><strong>Experiences:</strong> Detailed notes about the session - what was discussed, outcomes, observations</li>
+        <li><strong>Status:</strong>
+            <ul style="margin-top: 8px;">
+                <li><strong>Tentative:</strong> Event is planned but not yet confirmed</li>
+                <li><strong>Confirmed:</strong> Event is locked in and finalized</li>
+            </ul>
+        </li>
+        <li>After the event, you can generate a professional debriefing document</li>
+    </ul>
+</div>
+
+{% endblock %}

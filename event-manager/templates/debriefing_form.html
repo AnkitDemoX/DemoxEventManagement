@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}Debriefing Generator{% endblock %}
+
+{% block extra_css %}
+<style>
+    .debriefing-header {
+        background: linear-gradient(135deg, #0066CC 0%, #004B99 100%);
+        color: white;
+        padding: 50px 30px;
+        border-radius: 12px;
+        margin-bottom: 40px;
+        text-align: center;
+    }
+
+    .debriefing-header h1 {
+        color: white;
+        font-size: 2.5em;
+        margin-bottom: 10px;
+    }
+
+    .debriefing-header p {
+        font-size: 1.2em;
+        opacity: 0.95;
+    }
+
+    .form-section {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .form-section h2 {
+        color: #0066CC;
+        font-size: 1.4em;
+        margin-bottom: 20px;
+        border-bottom: 3px solid #00CCFF;
+        padding-bottom: 10px;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+        font-size: 0.95em;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    input[type="url"],
+    input[type="file"],
+    textarea,
+    select {
+        padding: 12px;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 1em;
+        transition: border-color 0.3s;
+    }
+
+    input[type="text"]:focus,
+    input[type="date"]:focus,
+    input[type="url"]:focus,
+    input[type="file"]:focus,
+    textarea:focus,
+    select:focus {
+        outline: none;
+        border-color: #0066CC;
+        box-shadow: 0 0 5px rgba(0,102,204,0.2);
+    }
+
+    textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .full-width {
+        grid-column: 1 / -1;
+    }
+
+    .submit-btn {
+        grid-column: 1 / -1;
+        padding: 14px 40px;
+        background: linear-gradient(135deg, #0066CC 0%, #004B99 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 1.1em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(0,102,204,0.3);
+    }
+
+    .help-text {
+        font-size: 0.85em;
+        color: #666;
+        margin-top: 5px;
+    }
+
+    .info-box {
+        background: #f0f4ff;
+        border-left: 4px solid #0066CC;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+        color: #333;
+    }
+
+    .loading {
+        display: none;
+        text-align: center;
+        padding: 20px;
+    }
+
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #0066CC;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="debriefing-header">
+    <h1>🔷 Debriefing Document Generator</h1>
+    <p>Create professional debriefing documents with embedded presentations and images</p>
+</div>
+
+<div style="max-width: 900px; margin: 0 auto;">
+    <div class="info-box">
+        <p><strong>ℹ️ Instructions:</strong> Fill in the session details below. Client Name and Session Date are required. All other fields are optional. Only sections with content will appear in the final document.</p>
+    </div>
+
+<form id="debriefingForm" enctype="multipart/form-data" method="POST" action="{{ url_for('generate_debriefing') }}" style="max-width: 900px; margin: 0 auto;">
+
+    <!-- Basic Information -->
+    <div class="form-section">
+        <h2>📋 Basic Session Information</h2>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="client_name">Client Name *</label>
+                <input type="text" id="client_name" name="client_name" required placeholder="e.g., Tenaga Nasional Berhad" value="{{ event.client_name if event else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="client_industry">Industry/Sector</label>
+                <input type="text" id="client_industry" name="client_industry" placeholder="e.g., Utilities & Energy">
+            </div>
+
+            <div class="form-group">
+                <label for="session_date">Session Date *</label>
+                <input type="date" id="session_date" name="session_date" required value="{{ event.event_date if event else '' }}">
+            </div>
+        </div>
+    </div>
+
+    <!-- File Uploads -->
+    <div class="form-section">
+        <h2>📁 Media & Files (Optional)</h2>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="client_logo">Client Logo</label>
+                <input type="file" id="client_logo" name="client_logo" accept=".png,.jpg,.jpeg">
+                <p class="help-text">Logo will appear in the document header (PNG or JPG)</p>
+            </div>
+
+            <div class="form-group">
+                <label for="presentation">Presentation Slides</label>
+                <input type="file" id="presentation" name="presentation" accept=".pdf">
+                <p class="help-text">Upload as PDF format for embedding in the document</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group full-width">
+                <label for="event_images">Event Images (.jpg, .png)</label>
+                <input type="file" id="event_images" name="event_images" accept=".jpg,.jpeg,.png" multiple>
+                <p class="help-text">Multiple images for interactive gallery</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Overview -->
+    <div class="form-section">
+        <h2>📊 Session Overview</h2>
+
+        <div class="form-row">
+            <div class="form-group full-width">
+                <label for="client_info">Client Information / Business Context</label>
+                <textarea id="client_info" name="client_info" placeholder="e.g., Client upgraded to 25.x version recently. As part of this session, we introduced them to Infinity Studio and AI Assistant capabilities...">{{ event.experiences if event else '' }}</textarea>
+                <p class="help-text">Brief description of client situation and why this session matters</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group full-width">
+                <label for="session_objective">Session Objective</label>
+                <textarea id="session_objective" name="session_objective" placeholder="e.g., Introduce Infinity Studio capabilities and demonstrate deterministic AI assistant features for development teams..."></textarea>
+                <p class="help-text">Main purpose and goals of the session</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group full-width">
+                <label for="topics_covered">Topics Covered</label>
+                <textarea id="topics_covered" name="topics_covered" placeholder="One topic per line (bullet prefix optional):&#10;Evolution from App Studio → Dev Studio → Infinity Studio&#10;AI Assistant capabilities and integration&#10;Deterministic workflow governance model&#10;Hands-on demo and guided walkthrough"></textarea>
+                <p class="help-text">List one topic per line (will be formatted as bullets)</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group full-width">
+                <label for="audience_profile">Audience Profile</label>
+                <textarea id="audience_profile" name="audience_profile" placeholder="e.g., Mixed group of technical developers and business stakeholders, supported by Solutions Consultant (SC), Customer Success Manager (CSM). Experienced Pega developers and business professionals..."></textarea>
+                <p class="help-text">Attendee types, roles, experience level</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Background -->
+    <div class="form-section">
+        <h2>🏢 Client Background</h2>
+
+        <div class="form-row">
+            <div class="form-group full-width">
+                <label for="client_overview">Client Overview</label>
+                <textarea id="client_overview" name="client_overview" placeholder="e.g., Tenaga Nasional Berhad (TNB) is Malaysia's leading integrated electricity utility company, responsible for the generation, transmission, and distribution of electricity..."></textarea>
+                <p class="help-text">Company description, mission, scale, and market position</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group full-width">
+                <label for="engagement_context">Engagement Context</label>
+                <textarea id="engagement_context" name="engagement_context" placeholder="e.g., TNB recently upgraded to Pega Platform version 25.x and is actively exploring advanced features including Infinity Studio and AI Assistant capabilities..."></textarea>
+                <p class="help-text">Why this session matters to them, current state, business drivers</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Materials -->
+    <div class="form-section">
+        <h2>🔗 Session Materials & Links</h2>
+
+        <div class="form-row">
+            <div class="form-group full-width">
+                <label for="recording_link">Session Recording Link</label>
+                <input type="url" id="recording_link" name="recording_link" placeholder="https://pega.webex.com/pega/ldr.php?RCID=...">
+                <p class="help-text">WebEx, Zoom, or other recording link (optional)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Sections -->
+    <div class="form-section">
+        <h2>📝 Debriefing Content</h2>
+
+        <div class="form-row">
+            <div class="form-group full-width">
+                <label for="what_went_well">What Went Well</label>
+                <textarea id="what_went_well" name="what_went_well" placeholder="Key highlights and positive feedback..."></textarea>
+                <p class="help-text">Session achievements and positive observations</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group full-width">
+                <label for="delivery_observations">Delivery Observations</label>
+                <textarea id="delivery_observations" name="delivery_observations" placeholder="Format, pacing, facilitation notes..."></textarea>
+                <p class="help-text">How the session was delivered and facilitated</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group full-width">
+                <label for="areas_improvement">Areas for Improvement</label>
+                <textarea id="areas_improvement" name="areas_improvement" placeholder="Constructive feedback for future sessions..."></textarea>
+                <p class="help-text">Recommendations for improvement</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group full-width">
+                <label for="audience_feedback">Audience Feedback</label>
+                <textarea id="audience_feedback" name="audience_feedback" placeholder="Client reactions, questions, engagement level..."></textarea>
+                <p class="help-text">Client feedback and engagement observations</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group full-width">
+                <label for="action_items">Action Items & Next Steps</label>
+                <textarea id="action_items" name="action_items" placeholder="1. First action item&#10;2. Second action item&#10;3. Third action item..."></textarea>
+                <p class="help-text">Follow-up tasks and responsibilities</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group full-width">
+                <label for="lessons_learned">Lessons Learned</label>
+                <textarea id="lessons_learned" name="lessons_learned" placeholder="Key insights and takeaways from the session..."></textarea>
+                <p class="help-text">Team learnings and key insights</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group full-width">
+                <label for="recommendations">Recommendations for Future Sessions</label>
+                <textarea id="recommendations" name="recommendations" placeholder="Best practices and suggestions for future sessions..."></textarea>
+                <p class="help-text">Improvements for future similar sessions</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="form-row">
+        <button type="submit" class="submit-btn">✨ Generate Debriefing Document</button>
+    </div>
+
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Generating your professional debriefing document...</p>
+    </div>
+</form>
+
+<script>
+    // Set today's date as default
+    document.getElementById('session_date').valueAsDate = new Date();
+</script>
+
+{% endblock %}
