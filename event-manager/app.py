@@ -377,9 +377,10 @@ def generate_html(**kwargs):
 
     images_html = ''
     if kwargs['images_b64']:
-        images_html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">'
+        images_html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;" id="imageGallery">'
         for i, img in enumerate(kwargs['images_b64']):
-            images_html += f'<img src="data:{img["mime"]};base64,{img["data"]}" alt="{img["name"]}" style="max-width: 100%; border-radius: 8px; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'scale(1)\'" onclick="openImageModal({i})">'
+            img_src = f"data:{img['mime']};base64,{img['data']}"
+            images_html += f'<img src="{img_src}" alt="{img["name"]}" style="max-width: 100%; border-radius: 8px; cursor: pointer; transition: transform 0.2s;" class="gallery-img" data-index="{i}" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'scale(1)\'">'
         images_html += '</div>'
 
     html = f"""<!DOCTYPE html>
@@ -491,15 +492,30 @@ def generate_html(**kwargs):
 
     <script>
         let currentImageIndex = 0;
-        const totalImages = {len(kwargs['images_b64']) if kwargs['images_b64'] else 0};
-        const images = [
-            {', '.join([f'\'data:{img["mime"]};base64,{img["data"]}\'' for img in kwargs['images_b64']])}
-        ];
+        let galleryImages = [];
+
+        // Initialize gallery
+        document.addEventListener('DOMContentLoaded', function() {{
+            const gallery = document.getElementById('imageGallery');
+            if (gallery) {{
+                const imgs = gallery.querySelectorAll('.gallery-img');
+                galleryImages = Array.from(imgs).map(img => img.src);
+
+                // Add click handlers
+                imgs.forEach((img, index) => {{
+                    img.addEventListener('click', function() {{
+                        openImageModal(index);
+                    }});
+                }});
+            }}
+        }});
 
         function openImageModal(index) {{
-            currentImageIndex = index;
-            document.getElementById('modalImage').src = images[index];
-            document.getElementById('imageModal').classList.add('active');
+            if (galleryImages.length > 0) {{
+                currentImageIndex = index;
+                document.getElementById('modalImage').src = galleryImages[index];
+                document.getElementById('imageModal').classList.add('active');
+            }}
         }}
 
         function closeImageModal() {{
@@ -507,21 +523,28 @@ def generate_html(**kwargs):
         }}
 
         function nextImage() {{
-            currentImageIndex = (currentImageIndex + 1) % totalImages;
-            document.getElementById('modalImage').src = images[currentImageIndex];
+            if (galleryImages.length > 0) {{
+                currentImageIndex = (currentImageIndex + 1) % galleryImages.length;
+                document.getElementById('modalImage').src = galleryImages[currentImageIndex];
+            }}
         }}
 
         function prevImage() {{
-            currentImageIndex = (currentImageIndex - 1 + totalImages) % totalImages;
-            document.getElementById('modalImage').src = images[currentImageIndex];
+            if (galleryImages.length > 0) {{
+                currentImageIndex = (currentImageIndex - 1 + galleryImages.length) % galleryImages.length;
+                document.getElementById('modalImage').src = galleryImages[currentImageIndex];
+            }}
         }}
 
         // Close modal on outside click
-        document.getElementById('imageModal').addEventListener('click', function(e) {{
-            if (e.target === this) {{
-                closeImageModal();
-            }}
-        }});
+        const modal = document.getElementById('imageModal');
+        if (modal) {{
+            modal.addEventListener('click', function(e) {{
+                if (e.target === this) {{
+                    closeImageModal();
+                }}
+            }});
+        }}
 
         // Keyboard navigation
         document.addEventListener('keydown', function(e) {{
