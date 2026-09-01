@@ -7,7 +7,6 @@ import hashlib
 from functools import wraps
 import base64
 import subprocess
-import io
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this'
@@ -379,8 +378,8 @@ def generate_html(**kwargs):
     images_html = ''
     if kwargs['images_b64']:
         images_html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">'
-        for img in kwargs['images_b64']:
-            images_html += f'<img src="data:{img["mime"]};base64,{img["data"]}" alt="{img["name"]}" style="max-width: 100%; border-radius: 8px; cursor: pointer;" onclick="this.style.maxWidth=this.style.maxWidth===\'100%\'?\'\'\'100%\'">'
+        for i, img in enumerate(kwargs['images_b64']):
+            images_html += f'<img src="data:{img["mime"]};base64,{img["data"]}" alt="{img["name"]}" style="max-width: 100%; border-radius: 8px; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'scale(1)\'" onclick="openImageModal({i})">'
         images_html += '</div>'
 
     html = f"""<!DOCTYPE html>
@@ -408,7 +407,20 @@ def generate_html(**kwargs):
         .badge-confirmed {{ background: #d4edda; color: #155724; }}
         .badge-tentative {{ background: #fff3cd; color: #856404; }}
         footer {{ text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 0.9em; }}
-        @media print {{ body {{ background: white; }} .container {{ padding: 0; }} }}
+
+        /* Image Modal Styles */
+        .modal {{ display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); }}
+        .modal.active {{ display: flex; justify-content: center; align-items: center; }}
+        .modal-content {{ position: relative; max-width: 90%; max-height: 90vh; }}
+        .modal-content img {{ max-width: 100%; max-height: 90vh; border-radius: 8px; }}
+        .close-modal {{ position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; background: rgba(0,0,0,0.5); width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }}
+        .close-modal:hover {{ background: rgba(0,0,0,0.8); }}
+        .prev-modal, .next-modal {{ position: absolute; top: 50%; transform: translateY(-50%); color: white; font-size: 30px; font-weight: bold; cursor: pointer; background: rgba(0,0,0,0.5); padding: 15px 20px; border-radius: 4px; user-select: none; }}
+        .prev-modal:hover, .next-modal:hover {{ background: rgba(0,0,0,0.8); }}
+        .prev-modal {{ left: 20px; }}
+        .next-modal {{ right: 20px; }}
+
+        @media print {{ body {{ background: white; }} .container {{ padding: 0; }} .modal {{ display: none !important; }} }}
     </style>
 </head>
 <body>
@@ -466,6 +478,60 @@ def generate_html(**kwargs):
             <p>© 2026 Pegasystems Inc. All rights reserved.</p>
         </footer>
     </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeImageModal()">&times;</span>
+            <span class="prev-modal" onclick="prevImage()">&#10094;</span>
+            <img id="modalImage" src="" alt="Event Image">
+            <span class="next-modal" onclick="nextImage()">&#10095;</span>
+        </div>
+    </div>
+
+    <script>
+        let currentImageIndex = 0;
+        const totalImages = {len(kwargs['images_b64']) if kwargs['images_b64'] else 0};
+        const images = [
+            {', '.join([f'\'data:{img["mime"]};base64,{img["data"]}\'' for img in kwargs['images_b64']])}
+        ];
+
+        function openImageModal(index) {{
+            currentImageIndex = index;
+            document.getElementById('modalImage').src = images[index];
+            document.getElementById('imageModal').classList.add('active');
+        }}
+
+        function closeImageModal() {{
+            document.getElementById('imageModal').classList.remove('active');
+        }}
+
+        function nextImage() {{
+            currentImageIndex = (currentImageIndex + 1) % totalImages;
+            document.getElementById('modalImage').src = images[currentImageIndex];
+        }}
+
+        function prevImage() {{
+            currentImageIndex = (currentImageIndex - 1 + totalImages) % totalImages;
+            document.getElementById('modalImage').src = images[currentImageIndex];
+        }}
+
+        // Close modal on outside click
+        document.getElementById('imageModal').addEventListener('click', function(e) {{
+            if (e.target === this) {{
+                closeImageModal();
+            }}
+        }});
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {{
+            if (document.getElementById('imageModal').classList.contains('active')) {{
+                if (e.key === 'ArrowRight') nextImage();
+                if (e.key === 'ArrowLeft') prevImage();
+                if (e.key === 'Escape') closeImageModal();
+            }}
+        }});
+    </script>
 </body>
 </html>"""
     return html
