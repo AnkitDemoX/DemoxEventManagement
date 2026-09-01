@@ -7,6 +7,7 @@ import hashlib
 from functools import wraps
 import base64
 import subprocess
+import io
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this'
