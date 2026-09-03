@@ -26,9 +26,10 @@
     .calendar-nav {
         display: flex;
         gap: 15px;
+        align-items: center;
     }
 
-    .calendar-nav a {
+    .calendar-nav a, .view-toggle {
         padding: 10px 20px;
         background: #0066CC;
         color: white;
@@ -36,10 +37,21 @@
         border-radius: 4px;
         font-weight: 600;
         transition: background 0.3s;
+        border: none;
+        cursor: pointer;
     }
 
-    .calendar-nav a:hover {
+    .calendar-nav a:hover, .view-toggle:hover {
         background: #004B99;
+    }
+
+    .view-toggle.active {
+        background: #004B99;
+    }
+
+    .view-toggle {
+        padding: 8px 16px;
+        font-size: 0.9em;
     }
 
     /* Calendar Grid */
@@ -60,12 +72,13 @@
 
     .calendar-table td {
         width: 14.28%;
-        height: 120px;
+        height: 150px;
         padding: 10px;
         border: 1px solid #ddd;
         vertical-align: top;
         background: white;
         transition: background 0.3s;
+        overflow-y: auto;
     }
 
     .calendar-table td:hover {
@@ -97,15 +110,30 @@
     .day-event {
         background: #e8f4ff;
         color: #0066CC;
-        padding: 3px 6px;
-        margin: 3px 0;
+        padding: 5px 8px;
+        margin: 3px 0 1px 0;
         border-radius: 3px;
-        font-size: 0.8em;
-        white-space: nowrap;
+        font-size: 0.95em;
+        font-weight: 700;
+        white-space: normal;
         overflow: hidden;
         text-overflow: ellipsis;
         cursor: pointer;
         transition: background 0.3s;
+        display: block;
+        line-height: 1.3;
+    }
+
+    .day-event-meta {
+        font-size: 0.8em;
+        color: #333;
+        padding: 2px 4px;
+        margin: 1px 0 0 0;
+        white-space: normal;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+        line-height: 1.2;
     }
 
     .day-event:hover {
@@ -163,6 +191,127 @@
         background: #fff3cd;
     }
 
+    /* Card View */
+    .card-view {
+        display: none;
+    }
+
+    .card-view.active {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .card-view a {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    .event-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .event-card:hover {
+        box-shadow: 0 8px 24px rgba(0, 102, 204, 0.25);
+        transform: translateY(-6px);
+        border-color: #0066CC;
+        background: #fafbff;
+    }
+
+    .event-card-status {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75em;
+        font-weight: 600;
+    }
+
+    .event-card-status.confirmed {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .event-card-status.tentative {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .event-card-status.completed {
+        background: #cfe2ff;
+        color: #084298;
+    }
+
+    .event-card-date {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .event-card-day {
+        font-size: 24px;
+        font-weight: 700;
+        color: #0066CC;
+        min-width: 50px;
+    }
+
+    .event-card-date-text {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.9em;
+    }
+
+    .event-card-date-text .month-year {
+        color: #666;
+        font-size: 0.85em;
+    }
+
+    .event-card-date-text .day-name {
+        color: #0066CC;
+        font-weight: 600;
+    }
+
+    .event-card-title {
+        font-size: 1.1em;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .event-card-detail {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9em;
+        color: #666;
+        margin-bottom: 8px;
+    }
+
+    .event-card-detail strong {
+        color: #333;
+        min-width: 100px;
+    }
+
+    .calendar-table.hidden {
+        display: none;
+    }
+
     @media (max-width: 768px) {
         .calendar-table td {
             height: 100px;
@@ -192,11 +341,19 @@
 
 <div class="calendar-container">
     <div class="calendar-header">
-        <h2>{{ month_name }} {{ year }}</h2>
+        <div>
+            <h2>{{ month_name }} {{ year }}</h2>
+            <p style="color: #666; font-size: 0.95em; margin: 8px 0 0 0;">
+                📊 Total Events This Month: <strong>{{ all_events|length }}</strong>
+            </p>
+        </div>
         <div class="calendar-nav">
+            <button class="view-toggle active" onclick="switchView('month')">📅 Month View</button>
+            <button class="view-toggle" onclick="switchView('card')">🎴 Card View</button>
             <a href="{{ url_for('calendar_view', year=prev_year, month=prev_month) }}">&larr; Previous</a>
             <a href="{{ url_for('calendar_view') }}">Today</a>
             <a href="{{ url_for('calendar_view', year=next_year, month=next_month) }}">Next &rarr;</a>
+        </div>
         </div>
     </div>
 
@@ -225,9 +382,17 @@
                         {% if date_str in events_by_date %}
                             <div class="events-in-day">
                                 {% for event in events_by_date[date_str] %}
-                                    <a href="{{ url_for('event_detail', event_id=event.id) }}" class="day-event {{ event.status }}">
-                                        📌 {{ event.client_name[:15] }}
+                                    <a href="{{ url_for('event_detail', event_id=event.id) }}" class="day-event {{ event.status }}" title="{{ event.client_name }}">
+                                        📌 {{ event.client_name[:18] }}
                                     </a>
+                                    {% if event.assigned_personnel %}
+                                        <div class="day-event-meta" title="{{ event.assigned_personnel }}">
+                                            👤
+                                            {% for contact in event.assigned_personnel.split(', ') %}
+                                                <span>{{ contact }}</span>{% if not loop.last %}, {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
                                 {% endfor %}
                             </div>
                         {% endif %}
@@ -240,7 +405,7 @@
     </table>
 
     <!-- Legend -->
-    <div class="legend">
+    <div class="legend" id="monthLegend">
         <div class="legend-item">
             <div class="legend-color confirmed"></div>
             <span>Confirmed</span>
@@ -251,10 +416,120 @@
         </div>
     </div>
 
+    <!-- Card View -->
+    <div class="card-view" id="cardView">
+        {% for event in all_events %}
+            {% set event_month = event.event_date.split('-')[1]|int %}
+            {% set event_year = event.event_date.split('-')[0]|int %}
+            {% if event_month == month and event_year == year %}
+        <a href="{{ url_for('event_detail', event_id=event.id) }}" style="text-decoration: none; color: inherit;">
+            <div class="event-card">
+                <div class="event-card-status {{ event.status }}">
+                    {{ event.status|title }}
+                </div>
+
+                <div class="event-card-date">
+                    <div class="event-card-day">
+                        {% set event_date = event.event_date.split('-')[2] %}
+                        {{ event_date|int }}
+                    </div>
+                    <div class="event-card-date-text">
+                        <div class="day-name">
+                            {% set date_obj = event.event_date ~ ' 00:00:00' %}
+                            {% set day_names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
+                            {{ day_names[event.event_date|replace('-', '') | int] }}
+                        </div>
+                        <div class="month-year">
+                            {% set month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] %}
+                            {% set event_month = event.event_date.split('-')[1] %}
+                            {% set event_year = event.event_date.split('-')[0] %}
+                            {{ month_names[event_month|int - 1] }} {{ event_year }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="event-card-title">
+                    {{ event.event_name if event.event_name else event.client_name }}
+                </div>
+
+                {% if event.start_time or event.end_time %}
+                <div style="font-size: 0.85em; color: #0066CC; font-weight: 600; margin-bottom: 10px;">
+                    🕐
+                    {% if event.start_time %}{{ event.start_time }}{% endif %}
+                    {% if event.start_time and event.end_time %} - {% endif %}
+                    {% if event.end_time %}{{ event.end_time }}{% endif %}
+                </div>
+                {% endif %}
+
+                {% if event.event_name %}
+                <div style="font-size: 1.15em; font-weight: 700; color: #0066CC; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #eee;">
+                    {{ event.client_name }}
+                </div>
+                {% endif %}
+
+                {% if event.assigned_personnel %}
+                <div class="event-card-detail">
+                    <strong>Contact:</strong>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+                    {% for contact in event.assigned_personnel.split(', ') %}
+                        <span style="background: #28a745; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 500;">{{ contact }}</span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="event-card-detail">
+                    <strong>Contact:</strong> Unassigned
+                </div>
+                {% endif %}
+
+                {% if event.experiences %}
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee;">
+                    <p style="color: #666; font-size: 0.85em; margin-bottom: 6px; font-weight: 600;">📝 Notes:</p>
+                    <p style="font-size: 0.85em; color: #555; line-height: 1.4; max-height: 60px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">
+                        {{ event.experiences }}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </a>
+            {% endif %}
+        {% endfor %}
+    </div>
+
     <!-- Quick Action -->
     <div style="margin-top: 20px; text-align: center;">
         <a href="{{ url_for('new_event') }}" class="btn btn-primary">➕ Create New Event</a>
     </div>
 </div>
+
+<script>
+function switchView(view) {
+    const tableContainer = document.querySelector('.calendar-table');
+    const cardView = document.getElementById('cardView');
+    const legend = document.getElementById('monthLegend');
+    const buttons = document.querySelectorAll('.view-toggle');
+
+    // Remove active class from all buttons
+    buttons.forEach(btn => btn.classList.remove('active'));
+
+    if (view === 'month') {
+        // Show month view
+        tableContainer.classList.remove('hidden');
+        cardView.classList.remove('active');
+        legend.style.display = 'flex';
+
+        // Add active class to month button
+        buttons[0].classList.add('active');
+    } else if (view === 'card') {
+        // Show card view
+        tableContainer.classList.add('hidden');
+        cardView.classList.add('active');
+        legend.style.display = 'none';
+
+        // Add active class to card button
+        buttons[1].classList.add('active');
+    }
+}
+</script>
 
 {% endblock %}

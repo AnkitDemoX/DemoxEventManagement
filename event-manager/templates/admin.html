@@ -9,9 +9,9 @@
     <p>Manage system administrators and user access.</p>
 </div>
 
-<!-- Current Admins -->
+<!-- Current Administrators -->
 <div class="card">
-    <h3>👥 Current Administrators</h3>
+    <h3>👑 Administrators</h3>
 
     {% if admins %}
         <table style="width: 100%; border-collapse: collapse;">
@@ -32,7 +32,7 @@
                     <td style="padding: 12px;">{{ admin.email }}</td>
                     <td style="padding: 12px;">
                         {% if admin.username != username %}
-                            <button onclick="showDeleteConfirm('{{ admin.username }}')"
+                            <button onclick="showDeleteConfirm('admin', '{{ admin.username }}')"
                                     class="btn btn-sm btn-danger">
                                 🗑️ Remove
                             </button>
@@ -49,32 +49,65 @@
     {% endif %}
 </div>
 
-<!-- Add New Admin -->
+<!-- Team Users -->
+<div class="card">
+    <h3>👥 Team Users</h3>
+
+    {% if users %}
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid #ddd;">
+                    <th style="text-align: left; padding: 12px; color: #0066CC;">Username</th>
+                    <th style="text-align: left; padding: 12px; color: #0066CC;">Email</th>
+                    <th style="text-align: left; padding: 12px; color: #0066CC;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px; font-weight: 600;">{{ user.username }}</td>
+                    <td style="padding: 12px;">{{ user.email }}</td>
+                    <td style="padding: 12px;">
+                        <button onclick="showDeleteConfirm('user', '{{ user.username }}')"
+                                class="btn btn-sm btn-danger">
+                            🗑️ Remove
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="color: #666; text-align: center; padding: 20px;">No team users yet.</p>
+    {% endif %}
+</div>
+
+<!-- Add New Administrator -->
 <div class="card">
     <h3>➕ Add New Administrator</h3>
 
     <form method="POST" action="{{ url_for('add_admin') }}">
         <div class="form-group">
-            <label for="username">Username *</label>
+            <label for="admin_username">Username *</label>
             <input type="text"
-                   id="username"
+                   id="admin_username"
                    name="username"
                    required
                    placeholder="e.g., john_doe">
         </div>
 
         <div class="form-group">
-            <label for="email">Email</label>
+            <label for="admin_email">Email</label>
             <input type="email"
-                   id="email"
+                   id="admin_email"
                    name="email"
                    placeholder="john@example.com">
         </div>
 
         <div class="form-group">
-            <label for="password">Password *</label>
+            <label for="admin_password">Password *</label>
             <input type="password"
-                   id="password"
+                   id="admin_password"
                    name="password"
                    required
                    placeholder="Enter a secure password">
@@ -84,12 +117,57 @@
     </form>
 
     <div style="background: #f0f4ff; padding: 15px; border-radius: 4px; margin-top: 15px; font-size: 0.9em; color: #333;">
-        <strong>ℹ️ Note:</strong> The new admin will have access to:
+        <strong>ℹ️ Administrators can:</strong>
         <ul style="margin-left: 20px; margin-top: 8px;">
             <li>View all events</li>
             <li>Create and manage events</li>
             <li>Access admin panel</li>
-            <li>View and manage other admins</li>
+            <li>Manage users and admins</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Add New Team User -->
+<div class="card">
+    <h3>➕ Add New Team User</h3>
+
+    <form method="POST" action="{{ url_for('add_user') }}">
+        <div class="form-group">
+            <label for="user_username">Username *</label>
+            <input type="text"
+                   id="user_username"
+                   name="username"
+                   required
+                   placeholder="e.g., jane_smith">
+        </div>
+
+        <div class="form-group">
+            <label for="user_email">Email</label>
+            <input type="email"
+                   id="user_email"
+                   name="email"
+                   placeholder="jane@example.com">
+        </div>
+
+        <div class="form-group">
+            <label for="user_password">Password *</label>
+            <input type="password"
+                   id="user_password"
+                   name="password"
+                   required
+                   placeholder="Enter a secure password">
+        </div>
+
+        <button type="submit" class="btn btn-primary">✅ Add Team User</button>
+    </form>
+
+    <div style="background: #f0f4ff; padding: 15px; border-radius: 4px; margin-top: 15px; font-size: 0.9em; color: #333;">
+        <strong>ℹ️ Team Users can:</strong>
+        <ul style="margin-left: 20px; margin-top: 8px;">
+            <li>Create and manage events</li>
+            <li>Generate debriefing documents</li>
+            <li>View calendar and dashboard</li>
+            <li style="color: #999;">❌ Cannot access admin panel</li>
         </ul>
     </div>
 </div>
@@ -97,8 +175,8 @@
 <!-- Delete Confirmation Modal -->
 <div id="deleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
     <div style="background: white; padding: 30px; border-radius: 8px; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-        <h2 style="color: #dc3545; margin-bottom: 15px;">⚠️ Remove Administrator?</h2>
-        <p style="color: #666; margin-bottom: 20px;">
+        <h2 style="color: #dc3545; margin-bottom: 15px;" id="deleteTitle">⚠️ Remove Administrator?</h2>
+        <p style="color: #666; margin-bottom: 20px;" id="deleteMessage">
             Are you sure you want to remove this administrator? They will no longer have access to the system.
         </p>
         <div style="display: flex; gap: 10px;">
@@ -116,9 +194,21 @@
 </div>
 
 <script>
-function showDeleteConfirm(username) {
+function showDeleteConfirm(userType, username) {
     const form = document.getElementById('deleteForm');
-    form.action = `/admin/${username}/delete`;
+    const title = document.getElementById('deleteTitle');
+    const message = document.getElementById('deleteMessage');
+
+    if (userType === 'admin') {
+        title.textContent = '⚠️ Remove Administrator?';
+        message.textContent = 'Are you sure you want to remove this administrator? They will no longer have access to the system.';
+        form.action = `/admin/${username}/delete`;
+    } else {
+        title.textContent = '⚠️ Remove Team User?';
+        message.textContent = 'Are you sure you want to remove this user? They will no longer have access to the system.';
+        form.action = `/user/${username}/delete`;
+    }
+
     document.getElementById('deleteModal').style.display = 'flex';
 }
 

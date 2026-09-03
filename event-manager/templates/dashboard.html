@@ -38,6 +38,7 @@
                     <th style="text-align: left; padding: 12px; color: #0066CC;">Client</th>
                     <th style="text-align: left; padding: 12px; color: #0066CC;">Date</th>
                     <th style="text-align: left; padding: 12px; color: #0066CC;">Location</th>
+                    <th style="text-align: left; padding: 12px; color: #0066CC;">Contact</th>
                     <th style="text-align: left; padding: 12px; color: #0066CC;">Status</th>
                     <th style="text-align: left; padding: 12px; color: #0066CC;">Actions</th>
                 </tr>
@@ -48,6 +49,17 @@
                     <td style="padding: 12px; font-weight: 600;">{{ event.client_name }}</td>
                     <td style="padding: 12px;">{{ event.event_date }}</td>
                     <td style="padding: 12px;">{{ event.location }}</td>
+                    <td style="padding: 12px;">
+                        {% if event.assigned_personnel %}
+                            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                {% for contact in event.assigned_personnel.split(', ') %}
+                                    <span style="background: #28a745; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85em; white-space: nowrap;">{{ contact }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <span style="color: #999;">-</span>
+                        {% endif %}
+                    </td>
                     <td style="padding: 12px;">
                         <span class="badge {% if event.status == 'confirmed' %}badge-confirmed{% else %}badge-tentative{% endif %}">
                             {{ event.status|title }}
@@ -76,6 +88,7 @@
                     <th style="text-align: left; padding: 12px; color: #0066CC;">Client</th>
                     <th style="text-align: left; padding: 12px; color: #0066CC;">Date</th>
                     <th style="text-align: left; padding: 12px; color: #0066CC;">Location</th>
+                    <th style="text-align: left; padding: 12px; color: #0066CC;">Contact</th>
                     <th style="text-align: left; padding: 12px; color: #0066CC;">Status</th>
                     <th style="text-align: left; padding: 12px; color: #0066CC;">Actions</th>
                 </tr>
@@ -93,7 +106,9 @@
                     </td>
                     <td style="padding: 12px;">
                         <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-sm btn-primary">View</a>
-                        <a href="{{ url_for('launch_debrief', event_id=event.id) }}" class="btn btn-sm btn-success">📄 Debrief</a>
+                        {% if event.status == 'completed' %}
+                            <a href="{{ url_for('launch_debrief_form', event_id=event.id) }}" class="btn btn-sm btn-success">📄 Debrief</a>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -110,7 +125,6 @@
     <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 15px;">
         <a href="{{ url_for('new_event') }}" class="btn btn-primary">➕ Create New Event</a>
         <a href="{{ url_for('calendar_view') }}" class="btn btn-primary">📅 View Calendar</a>
-        <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">⚙️ Manage Admins</a>
     </div>
 </div>
 

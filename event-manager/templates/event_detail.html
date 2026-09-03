@@ -1,19 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}{{ event.client_name }} - Event Details{% endblock %}
+{% block title %}{{ event.event_name if event.event_name else event.client_name }} - Event Details{% endblock %}
 
 {% block content %}
 
 <div class="page-header">
-    <h1>📌 {{ event.client_name }}</h1>
-    <p>Event Details</p>
+    <h1>📌 {{ event.event_name if event.event_name else event.client_name }}</h1>
+    <p>{{ event.client_name }}</p>
 </div>
 
 <!-- Event Overview Card -->
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
         <div>
-            <h2 style="color: #0066CC; margin-bottom: 10px;">{{ event.client_name }}</h2>
+            <h2 style="color: #0066CC; margin-bottom: 10px;">{{ event.event_name if event.event_name else event.client_name }}</h2>
+            {% if event.event_name %}<p style="color: #666; font-size: 0.95em;">Client: {{ event.client_name }}</p>{% endif %}
         </div>
         <span class="badge {% if event.status == 'confirmed' %}badge-confirmed{% else %}badge-tentative{% endif %}"
               style="font-size: 1em; padding: 8px 16px;">
@@ -29,6 +30,30 @@
             <p style="font-size: 1.2em; font-weight: 600; color: #333;">{{ event.event_date }}</p>
         </div>
 
+        <!-- Start Time -->
+        <div style="border-left: 4px solid #FFC107; padding-left: 15px;">
+            <p style="color: #666; font-size: 0.9em; margin-bottom: 5px;">🕐 Start Time</p>
+            <p style="font-size: 1.2em; font-weight: 600; color: #333;">
+                {% if event.start_time %}
+                    {{ event.start_time }}
+                {% else %}
+                    <em style="color: #999;">Not specified</em>
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- End Time -->
+        <div style="border-left: 4px solid #DC3545; padding-left: 15px;">
+            <p style="color: #666; font-size: 0.9em; margin-bottom: 5px;">🕑 End Time</p>
+            <p style="font-size: 1.2em; font-weight: 600; color: #333;">
+                {% if event.end_time %}
+                    {{ event.end_time }}
+                {% else %}
+                    <em style="color: #999;">Not specified</em>
+                {% endif %}
+            </p>
+        </div>
+
         <!-- Location -->
         <div style="border-left: 4px solid #00CCFF; padding-left: 15px;">
             <p style="color: #666; font-size: 0.9em; margin-bottom: 5px;">📍 Location</p>
@@ -39,6 +64,23 @@
                     <em style="color: #999;">Not specified</em>
                 {% endif %}
             </p>
+        </div>
+
+        <!-- Demo X Contact -->
+        <div style="border-left: 4px solid #28a745; padding-left: 15px;">
+            <p style="color: #666; font-size: 0.9em; margin-bottom: 10px;">👥 Demo X Contact</p>
+            {% if event.assigned_personnel %}
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    {% set contacts = event.assigned_personnel.split(', ') %}
+                    {% for contact in contacts %}
+                        <span style="background: #28a745; color: white; padding: 6px 12px; border-radius: 20px; font-size: 0.95em; font-weight: 500;">
+                            {{ contact }}
+                        </span>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <em style="color: #999;">Not assigned</em>
+            {% endif %}
         </div>
 
         <!-- Created By -->
@@ -83,7 +125,13 @@
         <a href="{{ url_for('edit_event', event_id=event.id) }}" class="btn btn-primary">✏️ Edit Event</a>
 
         <!-- Debrief Button -->
-       <a href="{{ url_for('debriefing_form') }}" class="btn btn-success">📄 Generate Debriefing</a>
+        {% if event.status == 'completed' %}
+            <a href="{{ url_for('launch_debrief_form', event_id=event.id) }}" class="btn btn-success">📄 Generate Debriefing</a>
+        {% else %}
+            <button class="btn btn-success" disabled style="opacity: 0.5; cursor: not-allowed;">
+                📄 Mark as Completed to Generate Debriefing
+            </button>
+        {% endif %}
 
         <!-- Delete Button -->
         <button type="button" class="btn btn-danger" onclick="showDeleteConfirm()">🗑️ Delete Event</button>

@@ -11,6 +11,17 @@
 
 <div class="card" style="max-width: 600px;">
     <form method="POST">
+        <!-- Event Name -->
+        <div class="form-group">
+            <label for="event_name">Event Name *</label>
+            <input type="text"
+                   id="event_name"
+                   name="event_name"
+                   value="{{ event.event_name if event else '' }}"
+                   required
+                   placeholder="e.g., Quarterly Review, Annual Workshop">
+        </div>
+
         <!-- Client Name -->
         <div class="form-group">
             <label for="client_name">Client Name *</label>
@@ -32,6 +43,26 @@
                    required>
         </div>
 
+        <!-- Start Time -->
+        <div class="form-group">
+            <label for="start_time">Start Time</label>
+            <input type="time"
+                   id="start_time"
+                   name="start_time"
+                   value="{{ event.start_time if event else '' }}"
+                   placeholder="HH:MM">
+        </div>
+
+        <!-- End Time -->
+        <div class="form-group">
+            <label for="end_time">End Time</label>
+            <input type="time"
+                   id="end_time"
+                   name="end_time"
+                   value="{{ event.end_time if event else '' }}"
+                   placeholder="HH:MM">
+        </div>
+
         <!-- Location -->
         <div class="form-group">
             <label for="location">Location</label>
@@ -40,6 +71,24 @@
                    name="location"
                    value="{{ event.location if event else '' }}"
                    placeholder="e.g., Kuala Lumpur, Malaysia">
+        </div>
+
+        <!-- Demo X Contact (Multiselect) -->
+        <div class="form-group">
+            <label for="assigned_personnel">Demo X Contact (Select One or More)</label>
+            <select id="assigned_personnel"
+                    name="assigned_personnel"
+                    multiple
+                    required
+                    style="height: 120px; padding: 8px;">
+                {% for member in team_members %}
+                    <option value="{{ member }}"
+                            {% if event and member in event.assigned_personnel %}selected{% endif %}>
+                        {{ member }}
+                    </option>
+                {% endfor %}
+            </select>
+            <small style="color: #666; margin-top: 5px; display: block;">Hold Ctrl/Cmd to select multiple team members</small>
         </div>
 
         <!-- Experiences -->
@@ -60,6 +109,9 @@
                 <option value="confirmed" {% if event and event.status == 'confirmed' %}selected{% endif %}>
                     Confirmed (✅ Locked In)
                 </option>
+                <option value="completed" {% if event and event.status == 'completed' %}selected{% endif %}>
+                    Completed (🎉 Done - Ready for Debriefing)
+                </option>
             </select>
         </div>
 
@@ -77,9 +129,12 @@
 <div class="card" style="max-width: 600px; margin-top: 20px; background: #f0f4ff; border-left: 4px solid #0066CC;">
     <h3 style="color: #0066CC; margin-bottom: 10px;">ℹ️ Tips</h3>
     <ul style="margin-left: 20px; color: #333; line-height: 1.6;">
+        <li><strong>Event Name:</strong> A descriptive title for the event (required)</li>
         <li><strong>Client Name:</strong> The organization or client name (required)</li>
         <li><strong>Event Date:</strong> When the event will take place (required)</li>
+        <li><strong>Start/End Time:</strong> Event start and end times (optional - helps track session duration)</li>
         <li><strong>Location:</strong> Physical or virtual location of the event</li>
+        <li><strong>Demo X Contact:</strong> Name of the Demo X team member leading this engagement</li>
         <li><strong>Experiences:</strong> Detailed notes about the session - what was discussed, outcomes, observations</li>
         <li><strong>Status:</strong>
             <ul style="margin-top: 8px;">

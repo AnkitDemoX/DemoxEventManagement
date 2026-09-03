@@ -7,7 +7,6 @@ import hashlib
 from functools import wraps
 import base64
 import subprocess
-import io
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this'
@@ -15,6 +14,8 @@ app.secret_key = 'your-secret-key-change-this'
 # File paths
 EVENTS_FILE = 'events.json'
 ADMINS_FILE = 'admins.json'
+USERS_FILE = 'users.json'
+TEAM_MEMBERS_FILE = 'team_members.json'
 UPLOAD_FOLDER = 'uploads/temp'
 BACKUP_DIR = 'backups'
 
@@ -47,6 +48,11 @@ def save_json(data, filename):
     with open(filename, 'w') as f:
         json.dump(data, f, indent=2)
 
+def load_team_members():
+    """Load team members from JSON file"""
+    team_data = load_json(TEAM_MEMBERS_FILE)
+    return team_data.get('team_members', [])
+
 def initialize_files():
     """Initialize JSON files if they don't exist"""
     if not os.path.exists(EVENTS_FILE):
@@ -64,7 +70,18 @@ def initialize_files():
         }
         save_json(admins, ADMINS_FILE)
 
+    if not os.path.exists(USERS_FILE):
+        save_json({"users": []}, USERS_FILE)
+
 # ==================== Authentication ====================
+
+def is_user_admin(username):
+    """Check if user is an admin"""
+    admins_data = load_json(ADMINS_FILE)
+    for admin in admins_data.get('admins', []):
+        if admin['username'] == username:
+            return True
+    return False
 
 def login_required(f):
     @wraps(f)
@@ -79,10 +96,19 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
+        password_hash = hashlib.sha256(password.encode()).hexdigest()
 
+        # Check admins
         admins_data = load_json(ADMINS_FILE)
         for admin in admins_data.get('admins', []):
-            if admin['username'] == username and admin['password'] == hashlib.sha256(password.encode()).hexdigest():
+            if admin['username'] == username and admin['password'] == password_hash:
+                session['username'] = username
+                return redirect(url_for('dashboard'))
+
+        # Check users
+        users_data = load_json(USERS_FILE)
+        for user in users_data.get('users', []):
+            if user['username'] == username and user['password'] == password_hash:
                 session['username'] = username
                 return redirect(url_for('dashboard'))
 
@@ -90,7 +116,7 @@ def login():
 
     return render_template('login.html')
 
-@app.route('/logout')
+@app.route('/logout', methods=['GET', 'POST'])
 def logout():
     session.pop('username', None)
     return redirect(url_for('login'))
@@ -114,7 +140,8 @@ def dashboard():
                          upcoming_events=upcoming[:5],
                          past_events=past[:5],
                          total_events=len(events),
-                         username=session.get('username'))
+                         username=session.get('username'),
+                         is_admin=is_user_admin(session.get('username')))
 
 # ==================== Calendar ====================
 
@@ -146,17 +173,22 @@ def calendar_view():
 
     month_name = cal.month_name[month]
 
+    # Sort events for card view
+    events_sorted = sorted(events, key=lambda x: x['event_date'])
+
     return render_template('calendar.html',
                          year=year,
                          month=month,
                          month_name=month_name,
                          calendar=month_calendar,
                          events_by_date=events_by_date,
+                         all_events=events_sorted,
                          prev_year=prev_year,
                          prev_month=prev_month,
                          next_year=next_year,
                          next_month=next_month,
-                         username=session.get('username'))
+                         username=session.get('username'),
+                         is_admin=is_user_admin(session.get('username')))
 
 # ==================== Events CRUD ====================
 
@@ -169,11 +201,19 @@ def new_event():
 
         new_id = max([e['id'] for e in events_data.get('events', [])], default=0) + 1
 
+        # Handle multiselect team members
+        selected_contacts = request.form.getlist('assigned_personnel')
+        assigned_personnel = ', '.join(selected_contacts) if selected_contacts else ''
+
         new_event = {
             'id': new_id,
+            'event_name': request.form.get('event_name'),
             'client_name': request.form.get('client_name'),
             'event_date': request.form.get('event_date'),
+            'start_time': request.form.get('start_time', ''),
+            'end_time': request.form.get('end_time', ''),
             'location': request.form.get('location'),
+            'assigned_personnel': assigned_personnel,
             'experiences': request.form.get('experiences'),
             'status': request.form.get('status', 'tentative'),
             'created_by': session.get('username'),
@@ -185,7 +225,12 @@ def new_event():
 
         return redirect(url_for('event_detail', event_id=new_id))
 
-    return render_template('event_form.html', event=None, username=session.get('username'))
+    team_members = load_team_members()
+    return render_template('event_form.html',
+                         event=None,
+                         team_members=team_members,
+                         username=session.get('username'),
+                         is_admin=is_user_admin(session.get('username')))
 
 @app.route('/event/<int:event_id>')
 @login_required
@@ -204,7 +249,8 @@ def event_detail(event_id):
 
     return render_template('event_detail.html',
                          event=event,
-                         username=session.get('username'))
+                         username=session.get('username'),
+                         is_admin=is_user_admin(session.get('username')))
 
 @app.route('/event/<int:event_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -224,9 +270,17 @@ def edit_event(event_id):
         return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
+        event['event_name'] = request.form.get('event_name')
         event['client_name'] = request.form.get('client_name')
         event['event_date'] = request.form.get('event_date')
+        event['start_time'] = request.form.get('start_time', '')
+        event['end_time'] = request.form.get('end_time', '')
         event['location'] = request.form.get('location')
+
+        # Handle multiselect team members
+        selected_contacts = request.form.getlist('assigned_personnel')
+        event['assigned_personnel'] = ', '.join(selected_contacts) if selected_contacts else ''
+
         event['experiences'] = request.form.get('experiences')
         event['status'] = request.form.get('status')
 
@@ -235,9 +289,12 @@ def edit_event(event_id):
 
         return redirect(url_for('event_detail', event_id=event_id))
 
+    team_members = load_team_members()
     return render_template('event_form.html',
                          event=event,
-                         username=session.get('username'))
+                         team_members=team_members,
+                         username=session.get('username'),
+                         is_admin=is_user_admin(session.get('username')))
 
 @app.route('/event/<int:event_id>/delete', methods=['POST'])
 @login_required
@@ -274,6 +331,25 @@ def debriefing_form():
     return render_template('debriefing_form.html',
                          event=debrief_event,
                          username=session.get('username'))
+
+@app.route('/event/<int:event_id>/generate-debrief', methods=['GET'])
+@login_required
+def launch_debrief_form(event_id):
+    """Load event and show debriefing form with pre-filled data"""
+    events_data = load_json(EVENTS_FILE)
+    event = None
+
+    for e in events_data.get('events', []):
+        if e['id'] == event_id:
+            event = e
+            break
+
+    if not event:
+        return redirect(url_for('dashboard'))
+
+    # Store event in session for the form
+    session['debrief_event'] = event
+    return redirect(url_for('debriefing_form'))
 
 @app.route('/generate-debriefing', methods=['POST'])
 @login_required
@@ -565,13 +641,21 @@ def generate_html(**kwargs):
 @app.route('/admin')
 @login_required
 def admin_panel():
-    """Admin panel for managing admins"""
+    """Admin panel for managing admins and users"""
+    if not is_user_admin(session.get('username')):
+        return redirect(url_for('dashboard'))
+
     admins_data = load_json(ADMINS_FILE)
+    users_data = load_json(USERS_FILE)
+
     admins = admins_data.get('admins', [])
+    users = users_data.get('users', [])
 
     return render_template('admin.html',
                          admins=admins,
-                         username=session.get('username'))
+                         users=users,
+                         username=session.get('username'),
+                         is_admin=True)
 
 @app.route('/admin/add', methods=['POST'])
 @login_required
@@ -598,12 +682,58 @@ def add_admin():
 @login_required
 def delete_admin(username):
     """Delete admin"""
+    if not is_user_admin(session.get('username')):
+        return jsonify({'error': 'Unauthorized'}), 403
+
     if username == session.get('username'):
         return jsonify({'error': 'Cannot delete yourself'}), 400
 
     admins_data = load_json(ADMINS_FILE)
     admins_data['admins'] = [a for a in admins_data['admins'] if a['username'] != username]
     save_json(admins_data, ADMINS_FILE)
+
+    return redirect(url_for('admin_panel'))
+
+@app.route('/user/add', methods=['POST'])
+@login_required
+def add_user():
+    """Add new team user"""
+    if not is_user_admin(session.get('username')):
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    users_data = load_json(USERS_FILE)
+
+    new_user = {
+        'username': request.form.get('username'),
+        'password': hashlib.sha256(request.form.get('password').encode()).hexdigest(),
+        'email': request.form.get('email')
+    }
+
+    # Check if username already exists
+    admins_data = load_json(ADMINS_FILE)
+    for admin in admins_data.get('admins', []):
+        if admin['username'] == new_user['username']:
+            return jsonify({'error': 'Username already exists'}), 400
+
+    for user in users_data.get('users', []):
+        if user['username'] == new_user['username']:
+            return jsonify({'error': 'Username already exists'}), 400
+
+    users_data['users'].append(new_user)
+    save_json(users_data, USERS_FILE)
+
+    return redirect(url_for('admin_panel'))
+
+@app.route('/user/<username>/delete', methods=['POST'])
+@login_required
+def delete_user(username):
+    """Delete team user"""
+    if not is_user_admin(session.get('username')):
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    users_data = load_json(USERS_FILE)
+    users_data['users'] = [u for u in users_data.get('users', []) if u['username'] != username]
+    save_json(users_data, USERS_FILE)
 
     return redirect(url_for('admin_panel'))
 

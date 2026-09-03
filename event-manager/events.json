@@ -2,34 +2,87 @@
   "events": [
     {
       "id": 2,
-      "client_name": "GEL",
-      "event_date": "2026-09-23",
-      "location": "Singapore",
-      "experiences": "CS, SA, Infinity Studio",
+      "event_name": "Simulator Experiences",
+      "client_name": "Macquarie Bank",
+      "event_date": "2026-10-02",
+      "location": "Sydney",
+      "assigned_personnel": "Ankit",
+      "experiences": "Customer Service, Back Office and Infinity Studio to be demonstrated",
       "status": "confirmed",
       "created_by": "ankit",
-      "created_at": "2026-08-31 16:09:22"
+      "created_at": "2026-09-03 10:14:57",
+      "start_time": "14:00",
+      "end_time": "17:00"
     },
     {
       "id": 3,
+      "event_name": "Hands on experience",
+      "client_name": "TAL",
+      "event_date": "2026-09-15",
+      "start_time": "11:15",
+      "end_time": "14:00",
+      "location": "Sydney",
+      "assigned_personnel": "Katherine, Nishant",
+      "experiences": "Customer Service, Back Office, Infinity Studio",
+      "status": "confirmed",
+      "created_by": "ankit",
+      "created_at": "2026-09-03 11:16:56"
+    },
+    {
+      "id": 4,
+      "event_name": "Blueprint Hackathon and Hands on Experience",
+      "client_name": "GEL",
+      "event_date": "2026-09-23",
+      "start_time": "09:00",
+      "end_time": "18:00",
+      "location": "Singapore",
+      "assigned_personnel": "Ankit, John",
+      "experiences": "Blueprint hackathon, hands on experienc customer service, back office and infinity studio",
+      "status": "confirmed",
+      "created_by": "ankit",
+      "created_at": "2026-09-03 11:18:41"
+    },
+    {
+      "id": 5,
+      "event_name": "Blueprint Hackathon and Hands on Experience",
       "client_name": "GEL",
       "event_date": "2026-09-25",
-      "location": "Malaysia",
-      "experiences": "SA, CS Infinity Studio",
+      "start_time": "09:00",
+      "end_time": "17:00",
+      "location": "Kuala Lampur",
+      "assigned_personnel": "Ankit, John",
+      "experiences": "Blueprint hackathon, hands on experience Customer Service, back office, infinity studio",
       "status": "confirmed",
       "created_by": "ankit",
-      "created_at": "2026-08-31 16:10:14"
-    }
-	,
-	{
-      "id": 4,
-      "client_name": "MCQ",
-      "event_date": "2026-10-02",
-      "location": "Sydney",
-      "experiences": "SA, CS, Infinity Studio",
-      "status": "confirmed",
+      "created_at": "2026-09-03 11:20:14"
+    },
+    {
+      "id": 6,
+      "event_name": "AI Assited Development",
+      "client_name": "ING",
+      "event_date": "2026-09-02",
+      "start_time": "11:00",
+      "end_time": "12:30",
+      "location": "Melbourne",
+      "assigned_personnel": "Yianni, Katherine, Nishant, Ankit",
+      "experiences": "AI Assited Development Experience",
+      "status": "completed",
       "created_by": "ankit",
-      "created_at": "2026-08-31 18:35:14"
+      "created_at": "2026-09-03 11:21:38"
+    },
+    {
+      "id": 7,
+      "event_name": "ANZ Upskill and Hackathon Engagement",
+      "client_name": "ANZ",
+      "event_date": "2026-09-08",
+      "start_time": "09:30",
+      "end_time": "16:30",
+      "location": "Melbourne",
+      "assigned_personnel": "Yianni, Katherine, Nishant, Ankit",
+      "experiences": "Blueprint hackathon and AI upskill",
+      "status": "tentative",
+      "created_by": "ankit",
+      "created_at": "2026-09-03 16:23:56"
     }
   ]
 }
