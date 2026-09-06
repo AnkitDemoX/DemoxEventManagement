@@ -79,7 +79,7 @@ def is_user_admin(username):
     """Check if user is an admin"""
     admins_data = load_json(ADMINS_FILE)
     for admin in admins_data.get('admins', []):
-        if admin['username'] == username:
+        if admin['username'].lower() == username.lower():
             return True
     return False
 
@@ -94,7 +94,7 @@ def login_required(f):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')
+        username = request.form.get('username').lower()
         password = request.form.get('password')
         password_hash = hashlib.sha256(password.encode()).hexdigest()
 
@@ -664,7 +664,7 @@ def add_admin():
     admins_data = load_json(ADMINS_FILE)
 
     new_admin = {
-        'username': request.form.get('username'),
+        'username': request.form.get('username').lower(),
         'password': hashlib.sha256(request.form.get('password').encode()).hexdigest(),
         'email': request.form.get('email')
     }
@@ -704,7 +704,7 @@ def add_user():
     users_data = load_json(USERS_FILE)
 
     new_user = {
-        'username': request.form.get('username'),
+        'username': request.form.get('username').lower(),
         'password': hashlib.sha256(request.form.get('password').encode()).hexdigest(),
         'email': request.form.get('email')
     }
