@@ -1,12 +1,13 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, send_file
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import calendar as cal
 import hashlib
 from functools import wraps
 import base64
 import subprocess
+import io
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this'
@@ -23,6 +24,9 @@ BACKUP_DIR = 'backups'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(BACKUP_DIR, exist_ok=True)
 os.makedirs('images', exist_ok=True)
+
+# Melbourne timezone (UTC+11 AEDT / UTC+10 AEST)
+MELBOURNE_TZ = timezone(timedelta(hours=11))
 
 # ==================== JSON File Handling ====================
 
@@ -79,7 +83,7 @@ def is_user_admin(username):
     """Check if user is an admin"""
     admins_data = load_json(ADMINS_FILE)
     for admin in admins_data.get('admins', []):
-        if admin['username'].lower() == username.lower():
+        if admin['username'] == username:
             return True
     return False
 
@@ -94,7 +98,7 @@ def login_required(f):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username').lower()
+        username = request.form.get('username')
         password = request.form.get('password')
         password_hash = hashlib.sha256(password.encode()).hexdigest()
 
@@ -132,7 +136,7 @@ def dashboard():
 
     events.sort(key=lambda x: x['event_date'], reverse=False)
 
-    today = datetime.now().strftime('%Y-%m-%d')
+    today = datetime.now(MELBOURNE_TZ).strftime('%Y-%m-%d')
     upcoming = [e for e in events if e['event_date'] >= today]
     past = [e for e in events if e['event_date'] < today]
 
@@ -152,7 +156,7 @@ def calendar_view():
     events_data = load_json(EVENTS_FILE)
     events = events_data.get('events', [])
 
-    today = datetime.now()
+    today = datetime.now(MELBOURNE_TZ)
     year = int(request.args.get('year', today.year))
     month = int(request.args.get('month', today.month))
 
@@ -217,7 +221,7 @@ def new_event():
             'experiences': request.form.get('experiences'),
             'status': request.form.get('status', 'tentative'),
             'created_by': session.get('username'),
-            'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            'created_at': datetime.now(MELBOURNE_TZ).strftime('%Y-%m-%d %H:%M:%S')
         }
 
         events_data['events'].append(new_event)
@@ -552,7 +556,7 @@ def generate_html(**kwargs):
         {f'<section><h2>Recommendations for Future Sessions</h2><p>{kwargs["recommendations"]}</p></section>' if kwargs['recommendations'] else ''}
 
         <footer>
-            <p>🔷 Pega Debriefing Report | Generated on {datetime.now().strftime('%B %d, %Y at %H:%M')}</p>
+            <p>🔷 Pega Debriefing Report | Generated on {datetime.now(MELBOURNE_TZ).strftime('%B %d, %Y at %H:%M')}</p>
             <p>© 2026 Pegasystems Inc. All rights reserved.</p>
         </footer>
     </div>
@@ -664,7 +668,7 @@ def add_admin():
     admins_data = load_json(ADMINS_FILE)
 
     new_admin = {
-        'username': request.form.get('username').lower(),
+        'username': request.form.get('username'),
         'password': hashlib.sha256(request.form.get('password').encode()).hexdigest(),
         'email': request.form.get('email')
     }
@@ -704,7 +708,7 @@ def add_user():
     users_data = load_json(USERS_FILE)
 
     new_user = {
-        'username': request.form.get('username').lower(),
+        'username': request.form.get('username'),
         'password': hashlib.sha256(request.form.get('password').encode()).hexdigest(),
         'email': request.form.get('email')
     }
