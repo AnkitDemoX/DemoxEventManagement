@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}Reports{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chart-container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 25px;
+    }
+    .chart-wrapper {
+        position: relative;
+        height: 250px;
+        margin-bottom: 15px;
+    }
+    .timeline-controls {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background: transparent;
+        padding: 0;
+        z-index: 100;
+    }
+    .timeline-controls-group {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 25px;
+    }
+    .timeline-controls-group .btn {
+        padding: 5px 10px;
+        font-size: 0.75em;
+        margin: 0;
+    }
+    .timeline-label {
+        font-size: 0.8em;
+        color: #666;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 12px;
+        margin-bottom: 25px;
+    }
+    .summary-card {
+        background: #f9f9f9;
+        padding: 12px;
+        border-radius: 4px;
+        border-left: 3px solid #0066CC;
+        text-align: center;
+    }
+    .summary-card h4 {
+        margin: 0 0 6px 0;
+        font-size: 0.8em;
+        color: #666;
+    }
+    .summary-card p {
+        margin: 0;
+        font-size: 1.5em;
+        font-weight: bold;
+        color: #0066CC;
+    }
+    .export-btn-container {
+        text-align: right;
+        margin-bottom: 15px;
+    }
+    .export-btn-container .btn {
+        font-size: 0.8em;
+        padding: 6px 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>Reports & Analytics</h1>
+</div>
+
+<!-- Timeline Controls - Inline -->
+<div class="timeline-controls-group">
+    <span class="timeline-label">Select Date Range:</span>
+    <a href="{{ url_for('reports', timeline='weekly') }}"
+       class="btn {% if timeline == 'weekly' %}btn-primary{% else %}btn-secondary{% endif %}">
+       Week
+    </a>
+    <a href="{{ url_for('reports', timeline='monthly') }}"
+       class="btn {% if timeline == 'monthly' %}btn-primary{% else %}btn-secondary{% endif %}">
+       Month
+    </a>
+    <a href="{{ url_for('reports', timeline='quarterly') }}"
+       class="btn {% if timeline == 'quarterly' %}btn-primary{% else %}btn-secondary{% endif %}">
+       Quarter
+    </a>
+
+    <!-- Custom Date Range (Inline) -->
+    <form method="GET" action="{{ url_for('reports') }}" style="display: flex; gap: 6px; align-items: center;">
+        <input type="hidden" name="timeline" value="custom">
+        <input type="date" name="start_date" value="{{ start_date if timeline == 'custom' else '' }}" style="padding: 4px; font-size: 0.75em; border: 1px solid #ddd; border-radius: 3px;">
+        <input type="date" name="end_date" value="{{ end_date if timeline == 'custom' else '' }}" style="padding: 4px; font-size: 0.75em; border: 1px solid #ddd; border-radius: 3px;">
+        <button type="submit" class="btn btn-primary" style="padding: 4px 8px; font-size: 0.75em;">Go</button>
+    </form>
+</div>
+
+<!-- Summary Stats -->
+<div class="summary-grid">
+    <div class="summary-card">
+        <h4>Total Events</h4>
+        <p>{{ month_events|length }}</p>
+    </div>
+    <div class="summary-card">
+        <h4>Experience Types</h4>
+        <p>{{ experience_counts|length }}</p>
+    </div>
+    <div class="summary-card">
+        <h4>Team Members</h4>
+        <p>{{ resource_utilization|length }}</p>
+    </div>
+    <div class="summary-card">
+        <h4>Dates Allocated</h4>
+        <p>{{ resource_by_date|length }}</p>
+    </div>
+</div>
+
+<!-- Report 1: Events Breakdown (Pie Chart) -->
+<div class="chart-container" style="position: relative;">
+    <h3 style="margin-top: 0;">📊 Events Breakdown</h3>
+    <p style="color: #666; font-size: 0.85em; margin-bottom: 15px;">Distribution of sessions by experience type</p>
+
+    <div class="export-btn-container">
+        <a href="{{ url_for('export_reports', timeline=timeline, start_date=start_date if timeline == 'custom' else '', end_date=end_date if timeline == 'custom' else '') }}"
+           class="btn btn-success" download>
+           Export
+        </a>
+    </div>
+
+    {% if experience_counts %}
+    <div class="chart-wrapper">
+        <canvas id="experienceChart"></canvas>
+    </div>
+    {% else %}
+    <div style="background: #f0f4ff; border-left: 3px solid #0066CC; padding: 12px; border-radius: 4px; color: #333; font-size: 0.9em;">
+        <p>No experience data available</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Report 2: Resource Utilization (Small Vertical Bar Chart) -->
+<div class="chart-container">
+    <h3 style="margin-top: 0;">👥 Resource Utilization</h3>
+    <p style="color: #666; font-size: 0.85em; margin-bottom: 15px;">Events per team member</p>
+    {% if resource_utilization %}
+    <div class="chart-wrapper" style="height: 200px;">
+        <canvas id="resourceUtilizationChart"></canvas>
+    </div>
+    {% else %}
+    <div style="background: #f0f4ff; border-left: 3px solid #0066CC; padding: 12px; border-radius: 4px; color: #333; font-size: 0.9em;">
+        <p>No resource data available</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Report 3: Resource Allocation by Date -->
+<div class="chart-container">
+    <h3 style="margin-top: 0;">📅 Resource Allocation by Date</h3>
+    <p style="color: #666; font-size: 0.85em; margin-bottom: 15px;">Team members allocated by date with experience types</p>
+
+    <!-- Legend -->
+    {% if experience_colors %}
+    <div style="margin-bottom: 12px; padding: 8px; background: #f9f9f9; border-radius: 4px;">
+        <p style="font-weight: 600; margin: 0 0 6px 0; font-size: 0.8em;">Legend:</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+            {% for exp_type, color in experience_colors.items() %}
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <div style="width: 14px; height: 14px; background: {{ color }}; border-radius: 2px;"></div>
+                <span style="font-size: 0.8em;">{{ exp_type }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Calendar Table -->
+    {% if resource_by_date %}
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85em;">
+            <thead>
+                <tr style="background: #f0f0f0; border-bottom: 2px solid #ddd;">
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left; font-weight: 600;">Date</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left; font-weight: 600;">Team Members & Experience Types</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for date_str in resource_by_date|sort %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="border: 1px solid #ddd; padding: 8px; font-weight: 600; white-space: nowrap;">{{ date_str }}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">
+                        {% set resources_list = resource_by_date[date_str] %}
+                        {% for resource in resources_list %}
+                        <div style="margin-bottom: 6px;">
+                            <strong style="color: #333;">{{ resource.name }}</strong>
+                            <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px;">
+                                {% for exp_type in resource.exp_types %}
+                                {% set color = resource.colors[loop.index0] if loop.index0 < resource.colors|length else '#999999' %}
+                                <span style="background: {{ color }}; color: white; padding: 2px 6px; border-radius: 2px; font-size: 0.75em; font-weight: 500;">
+                                    {{ exp_type }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="background: #f0f4ff; border-left: 3px solid #0066CC; padding: 12px; border-radius: 4px; color: #333; font-size: 0.9em;">
+        <p>No resource allocation data available</p>
+    </div>
+    {% endif %}
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+
+        {% if resource_utilization %}
+        // Resource Utilization Chart (Vertical - Smaller)
+        try {
+            const utilMembers = [{% for member in resource_utilization.keys()|sort %}'{{ member }}',{% endfor %}];
+            const utilValues = [{% for member in resource_utilization.keys()|sort %}{{ resource_utilization[member] }},{% endfor %}];
+
+            const ctx3 = document.getElementById('resourceUtilizationChart');
+            if (ctx3 && typeof Chart !== 'undefined') {
+                new Chart(ctx3.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: utilMembers,
+                        datasets: [{
+                            label: 'Events',
+                            data: utilValues,
+                            backgroundColor: '#0066CC',
+                            borderColor: '#004499',
+                            borderWidth: 0.5
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'x',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1, font: { size: 10 } }
+                            },
+                            x: {
+                                ticks: { font: { size: 9 } }
+                            }
+                        }
+                    }
+                });
+            }
+        } catch(e) { console.error('Resource utilization chart error:', e); }
+        {% endif %}
+
+        {% if experience_counts %}
+        // Experience Chart (Pie with Percentages)
+        try {
+            const expData = {
+                {% for exp_type, count in experience_counts.items() %}
+                '{{ exp_type }}': {{ count }},
+                {% endfor %}
+            };
+
+            const expLabels = Object.keys(expData);
+            const expValues = Object.values(expData);
+            const total = expValues.reduce((a, b) => a + b, 0);
+
+            const ctx1 = document.getElementById('experienceChart');
+            if (ctx1 && typeof Chart !== 'undefined') {
+                new Chart(ctx1.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: expLabels.map((label, idx) => {
+                            const pct = ((expValues[idx] / total) * 100).toFixed(1);
+                            return label + ' (' + pct + '%)';
+                        }),
+                        datasets: [{
+                            data: expValues,
+                            backgroundColor: ['#0066CC', '#FF6B6B', '#28a745', '#FFC107', '#00CCFF', '#9966FF', '#FF9800'],
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { font: { size: 10 }, padding: 10 } }
+                        }
+                    }
+                });
+            }
+        } catch(e) { console.error('Experience chart error:', e); }
+        {% endif %}
+
+    }, 100);
+});
+</script>
+
+{% endblock %}

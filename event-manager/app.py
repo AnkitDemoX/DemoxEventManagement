@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, send_file
 import json
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 import calendar as cal
 import hashlib
 from functools import wraps
@@ -25,8 +25,29 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(BACKUP_DIR, exist_ok=True)
 os.makedirs('images', exist_ok=True)
 
-# Melbourne timezone (UTC+11 AEDT / UTC+10 AEST)
-MELBOURNE_TZ = timezone(timedelta(hours=11))
+# Melbourne timezone - handles DST automatically
+# AEST (UTC+10): April-September | AEDT (UTC+11): October-March
+def get_melbourne_tz():
+    """Get correct Melbourne timezone with DST handling"""
+    now = datetime.utcnow()
+    # DST runs Oct 1 - Apr 30 (approximately)
+    if now.month >= 10 or now.month <= 3:  # October to March = AEDT (UTC+11)
+        return timezone(timedelta(hours=11))
+    else:  # April to September = AEST (UTC+10)
+        return timezone(timedelta(hours=10))
+
+MELBOURNE_TZ = get_melbourne_tz()
+
+# Experience types available
+EXPERIENCE_TYPES = [
+    'Sales Automation',
+    'Back office',
+    'Customer Service',
+    'AI Assisted Development',
+    'Infinity Studio',
+    'NBA Game',
+    'Customer Engagement Studio'
+]
 
 # ==================== JSON File Handling ====================
 
@@ -125,6 +146,19 @@ def logout():
     session.pop('username', None)
     return redirect(url_for('login'))
 
+@app.route('/debug-time')
+def debug_time():
+    """Debug endpoint to check server time"""
+    utc_now = datetime.utcnow()
+    melb_now = datetime.now(MELBOURNE_TZ)
+    return jsonify({
+        'UTC_time': utc_now.strftime('%Y-%m-%d %H:%M:%S'),
+        'Melbourne_time': melb_now.strftime('%Y-%m-%d %H:%M:%S'),
+        'UTC_day_of_week': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][utc_now.weekday()],
+        'Melbourne_day_of_week': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][melb_now.weekday()],
+        'Timezone_offset': str(MELBOURNE_TZ)
+    })
+
 # ==================== Dashboard ====================
 
 @app.route('/')
@@ -155,6 +189,9 @@ def calendar_view():
     """Monthly calendar view"""
     events_data = load_json(EVENTS_FILE)
     events = events_data.get('events', [])
+
+    # Set calendar to start on Sunday (not Monday)
+    cal.setfirstweekday(cal.SUNDAY)
 
     today = datetime.now(MELBOURNE_TZ)
     year = int(request.args.get('year', today.year))
@@ -216,6 +253,18 @@ def new_event():
         selected_contacts = request.form.getlist('assigned_personnel')
         assigned_personnel = ', '.join(selected_contacts) if selected_contacts else ''
 
+        # Handle multiselect experience types
+        selected_experiences = request.form.getlist('experience_type')
+        experience_type = ', '.join(selected_experiences) if selected_experiences else ''
+
+        # Handle travel involved
+        travel_involved = request.form.get('travel_involved', 'No')
+        if travel_involved == 'Yes':
+            travelling_members = request.form.getlist('travelling_member')
+            travelling_member = ', '.join(travelling_members) if travelling_members else ''
+        else:
+            travelling_member = ''
+
         new_event = {
             'id': new_id,
             'event_name': request.form.get('event_name'),
@@ -225,8 +274,12 @@ def new_event():
             'end_time': request.form.get('end_time', ''),
             'location': request.form.get('location'),
             'assigned_personnel': assigned_personnel,
+            'experience_type': experience_type,
             'experiences': request.form.get('experiences'),
             'status': request.form.get('status', 'tentative'),
+            'itsm_ticket': request.form.get('itsm_ticket', ''),
+            'travel_involved': travel_involved,
+            'travelling_member': travelling_member,
             'created_by': session.get('username'),
             'created_at': datetime.now(MELBOURNE_TZ).strftime('%Y-%m-%d %H:%M:%S')
         }
@@ -240,6 +293,7 @@ def new_event():
     return render_template('event_form.html',
                          event=None,
                          team_members=team_members,
+                         experience_types=EXPERIENCE_TYPES,
                          username=session.get('username'),
                          is_admin=is_user_admin(session.get('username')))
 
@@ -292,6 +346,20 @@ def edit_event(event_id):
         selected_contacts = request.form.getlist('assigned_personnel')
         event['assigned_personnel'] = ', '.join(selected_contacts) if selected_contacts else ''
 
+        # Handle multiselect experience types
+        selected_experiences = request.form.getlist('experience_type')
+        event['experience_type'] = ', '.join(selected_experiences) if selected_experiences else ''
+
+        # Handle travel involved
+        travel_involved = request.form.get('travel_involved', 'No')
+        event['travel_involved'] = travel_involved
+        if travel_involved == 'Yes':
+            travelling_members = request.form.getlist('travelling_member')
+            event['travelling_member'] = ', '.join(travelling_members) if travelling_members else ''
+        else:
+            event['travelling_member'] = ''
+        event['itsm_ticket'] = request.form.get('itsm_ticket', '')
+
         event['experiences'] = request.form.get('experiences')
         event['status'] = request.form.get('status')
 
@@ -304,6 +372,7 @@ def edit_event(event_id):
     return render_template('event_form.html',
                          event=event,
                          team_members=team_members,
+                         experience_types=EXPERIENCE_TYPES,
                          username=session.get('username'),
                          is_admin=is_user_admin(session.get('username')))
 
@@ -552,7 +621,7 @@ def generate_html(**kwargs):
         {f'<section><h2>Client Background</h2><h3>Client Overview</h3><p>{kwargs["client_overview"]}</p></section>' if kwargs['client_overview'] else ''}
         {f'<section><h3>Engagement Context</h3><p>{kwargs["engagement_context"]}</p></section>' if kwargs['engagement_context'] else ''}
 
-        {f'<section><h2>Session Materials</h2><p><strong>Recording Link:</strong> <a href="{kwargs["recording_link"]}">{kwargs["recording_link"]}</a></p></section>' if kwargs['recording_link'] else ''}
+        {f'<section><h2>Session Materials</h2><p><a href="{kwargs["recording_link"]}" style="display: inline-block; background: #0066CC; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">🎥 View Recording</a></p></section>' if kwargs['recording_link'] else ''}
 
         {f'<section><h2>What Went Well</h2><p>{kwargs["what_went_well"]}</p></section>' if kwargs['what_went_well'] else ''}
         {f'<section><h2>Delivery Observations</h2><p>{kwargs["delivery_observations"]}</p></section>' if kwargs['delivery_observations'] else ''}
@@ -747,6 +816,253 @@ def delete_user(username):
     save_json(users_data, USERS_FILE)
 
     return redirect(url_for('admin_panel'))
+
+# ==================== Static Files ====================
+
+@app.route('/images/<filename>')
+def serve_image(filename):
+    """Serve images from the images folder"""
+    return send_file(os.path.join('images', filename))
+
+# ==================== Resources & Reports ====================
+
+@app.route('/resources')
+@login_required
+def resources():
+    """Resources page with links and contacts"""
+    resources_data = load_json('resources.json') if os.path.exists('resources.json') else {
+        'resources': [
+            {'title': 'How to Raise ITSM Ticket', 'link': '#', 'category': 'Knowledge'},
+            {'title': 'How to Engage Other Teams', 'link': '#', 'category': 'Knowledge'}
+        ]
+    }
+    return render_template('resources.html',
+                         resources=resources_data.get('resources', []),
+                         username=session.get('username'),
+                         is_admin=is_user_admin(session.get('username')))
+
+@app.route('/reports')
+@login_required
+def reports():
+    """Reports with analytics"""
+    events_data = load_json(EVENTS_FILE)
+    events = events_data.get('events', [])
+
+    # Get timeline parameter
+    timeline = request.args.get('timeline', 'monthly')
+    custom_start = request.args.get('start_date', '')
+    custom_end = request.args.get('end_date', '')
+
+    # Get current date
+    today = datetime.now(MELBOURNE_TZ).date()
+
+    # Calculate date ranges based on timeline
+    if timeline == 'weekly':
+        # Start from Monday of current week
+        start_date = today - timedelta(days=today.weekday())
+        end_date = today
+        date_range_text = f"Current Week ({start_date} to {end_date})"
+    elif timeline == 'quarterly':
+        # Start from first day of current quarter
+        quarter = (today.month - 1) // 3
+        start_date = today.replace(month=quarter * 3 + 1, day=1)
+        end_date = today
+        date_range_text = f"Current Quarter ({start_date} to {end_date})"
+    elif timeline == 'custom' and custom_start and custom_end:
+        start_date = datetime.strptime(custom_start, '%Y-%m-%d').date()
+        end_date = datetime.strptime(custom_end, '%Y-%m-%d').date()
+        date_range_text = f"Custom ({start_date} to {end_date})"
+    else:  # monthly (default)
+        # Start from first day of current month
+        start_date = today.replace(day=1)
+        end_date = today
+        date_range_text = f"Current Month ({start_date} to {end_date})"
+
+    # Filter events by date range
+    month_events = [e for e in events
+                   if start_date <= datetime.strptime(e['event_date'], '%Y-%m-%d').date() <= end_date]
+
+    current_month = today.month
+    current_year = today.year
+
+    # Build analytics data
+    experience_counts = {}
+    resource_allocation = {}
+    resource_utilization = {}  # Total events per team member
+    resource_by_date = {}  # Calendar view: date -> {resource -> event_types}
+    experience_colors = {}  # Map experience types to colors
+
+    # Color palette for experience types
+    colors = ['#0066CC', '#FF6B6B', '#28a745', '#FFC107', '#00CCFF', '#9966FF', '#FF9800', '#E91E63', '#2196F3', '#4CAF50']
+    color_idx = 0
+
+    for event in month_events:
+        exp_types = event.get('experience_type', '').split(', ') if event.get('experience_type') else []
+        team = event.get('assigned_personnel', '').split(', ') if event.get('assigned_personnel') else []
+        event_date = event.get('event_date', '')
+
+        # Track experience types and assign colors
+        for exp_type in exp_types:
+            if exp_type:
+                if exp_type not in experience_colors:
+                    experience_colors[exp_type] = colors[color_idx % len(colors)]
+                    color_idx += 1
+                experience_counts[exp_type] = experience_counts.get(exp_type, 0) + 1
+
+        for member in team:
+            if member:
+                # Resource allocation by experience type
+                if member not in resource_allocation:
+                    resource_allocation[member] = {}
+                for exp_type in exp_types:
+                    if exp_type:
+                        resource_allocation[member][exp_type] = resource_allocation[member].get(exp_type, 0) + 1
+
+                # Resource utilization (total events per person)
+                resource_utilization[member] = resource_utilization.get(member, 0) + 1
+
+                # Resource allocation by date (for calendar view)
+                if event_date not in resource_by_date:
+                    resource_by_date[event_date] = {}
+                if member not in resource_by_date[event_date]:
+                    resource_by_date[event_date][member] = []
+                resource_by_date[event_date][member].extend(exp_types)
+
+    # Convert resource_by_date to format suitable for template
+    resource_by_date_formatted = {}
+    for date_str, resources_dict in resource_by_date.items():
+        formatted_resources = []
+        for resource, exp_types in resources_dict.items():
+            unique_exp_types = list(set([e for e in exp_types if e]))
+            formatted_resources.append({
+                'name': resource,
+                'exp_types': unique_exp_types,
+                'colors': [experience_colors.get(e, '#999999') for e in unique_exp_types]
+            })
+        resource_by_date_formatted[date_str] = formatted_resources
+
+    return render_template('reports.html',
+                         experience_counts=experience_counts,
+                         resource_allocation=resource_allocation,
+                         resource_utilization=resource_utilization,
+                         resource_by_date=resource_by_date_formatted,
+                         experience_colors=experience_colors,
+                         current_month=current_month,
+                         current_year=current_year,
+                         timeline=timeline,
+                         date_range_text=date_range_text,
+                         month_events=month_events,
+                         start_date=start_date.isoformat() if isinstance(start_date, date) else start_date,
+                         end_date=end_date.isoformat() if isinstance(end_date, date) else end_date,
+                         username=session.get('username'),
+                         is_admin=is_user_admin(session.get('username')))
+
+@app.route('/reports/export')
+@login_required
+def export_reports():
+    """Export reports data to CSV - comprehensive export with all three reports"""
+    import csv
+    from io import StringIO
+    import zipfile
+
+    events_data = load_json(EVENTS_FILE)
+    events = events_data.get('events', [])
+
+    timeline = request.args.get('timeline', 'monthly')
+    custom_start = request.args.get('start_date', '')
+    custom_end = request.args.get('end_date', '')
+
+    today = datetime.now(MELBOURNE_TZ).date()
+
+    # Calculate date ranges based on timeline
+    if timeline == 'weekly':
+        start_date = today - timedelta(days=today.weekday())
+        end_date = today
+    elif timeline == 'quarterly':
+        quarter = (today.month - 1) // 3
+        start_date = today.replace(month=quarter * 3 + 1, day=1)
+        end_date = today
+    elif timeline == 'custom' and custom_start and custom_end:
+        start_date = datetime.strptime(custom_start, '%Y-%m-%d').date()
+        end_date = datetime.strptime(custom_end, '%Y-%m-%d').date()
+    else:  # monthly (default)
+        start_date = today.replace(day=1)
+        end_date = today
+
+    # Filter events by date range
+    month_events = [e for e in events
+                   if start_date <= datetime.strptime(e['event_date'], '%Y-%m-%d').date() <= end_date]
+
+    # Prepare three CSV reports
+    from io import BytesIO
+
+    # Report 1: Events Breakdown
+    events_output = StringIO()
+    events_writer = csv.writer(events_output)
+    events_writer.writerow(['Event Name', 'Client', 'Date', 'Status', 'Experience Type', 'Team Members', 'Travel Involved', 'ITSM Ticket'])
+    for event in month_events:
+        events_writer.writerow([
+            event.get('event_name', ''),
+            event.get('client_name', ''),
+            event.get('event_date', ''),
+            event.get('status', ''),
+            event.get('experience_type', ''),
+            event.get('assigned_personnel', ''),
+            event.get('travel_involved', 'No'),
+            event.get('itsm_ticket', '')
+        ])
+
+    # Report 2: Resource Utilization
+    resource_utilization = {}
+    for event in month_events:
+        team = event.get('assigned_personnel', '').split(', ') if event.get('assigned_personnel') else []
+        for member in team:
+            if member:
+                resource_utilization[member] = resource_utilization.get(member, 0) + 1
+
+    resource_util_output = StringIO()
+    resource_util_writer = csv.writer(resource_util_output)
+    resource_util_writer.writerow(['Team Member', 'Number of Events Allocated'])
+    for member in sorted(resource_utilization.keys()):
+        resource_util_writer.writerow([member, resource_utilization[member]])
+
+    # Report 3: Resource Allocation by Date
+    resource_by_date = {}
+    for event in month_events:
+        team = event.get('assigned_personnel', '').split(', ') if event.get('assigned_personnel') else []
+        exp_types = event.get('experience_type', '').split(', ') if event.get('experience_type') else []
+        event_date = event.get('event_date', '')
+
+        if event_date not in resource_by_date:
+            resource_by_date[event_date] = {}
+        for member in team:
+            if member:
+                if member not in resource_by_date[event_date]:
+                    resource_by_date[event_date][member] = []
+                resource_by_date[event_date][member].extend(exp_types)
+
+    resource_date_output = StringIO()
+    resource_date_writer = csv.writer(resource_date_output)
+    resource_date_writer.writerow(['Date', 'Team Member', 'Experience Types'])
+    for date_str in sorted(resource_by_date.keys()):
+        for member, exp_types in resource_by_date[date_str].items():
+            unique_exp_types = ', '.join(set([e for e in exp_types if e]))
+            resource_date_writer.writerow([date_str, member, unique_exp_types])
+
+    # Create ZIP file with all three reports
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        zip_file.writestr('Events_Breakdown.csv', events_output.getvalue())
+        zip_file.writestr('Resource_Utilization.csv', resource_util_output.getvalue())
+        zip_file.writestr('Resource_Allocation_by_Date.csv', resource_date_output.getvalue())
+
+    zip_buffer.seek(0)
+    return send_file(
+        zip_buffer,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name=f'reports_{timeline}_{datetime.now(MELBOURNE_TZ).strftime("%Y%m%d")}.zip'
+    )
 
 # ==================== Error Handling ====================
 

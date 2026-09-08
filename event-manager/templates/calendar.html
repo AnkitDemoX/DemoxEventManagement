@@ -72,7 +72,7 @@
 
     .calendar-table td {
         width: 14.28%;
-        height: 150px;
+        height: 200px;
         padding: 10px;
         border: 1px solid #ddd;
         vertical-align: top;
@@ -113,11 +113,10 @@
         padding: 5px 8px;
         margin: 3px 0 1px 0;
         border-radius: 3px;
-        font-size: 0.95em;
+        font-size: 1.1em;
         font-weight: 700;
         white-space: normal;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        overflow: visible;
         cursor: pointer;
         transition: background 0.3s;
         display: block;
@@ -125,15 +124,14 @@
     }
 
     .day-event-meta {
-        font-size: 0.8em;
+        font-size: 0.9em;
         color: #333;
         padding: 2px 4px;
-        margin: 1px 0 0 0;
+        margin: 2px 0 0 0;
         white-space: normal;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        overflow: visible;
         display: block;
-        line-height: 1.2;
+        line-height: 1.3;
     }
 
     .day-event:hover {
@@ -479,6 +477,31 @@
                 {% else %}
                 <div class="event-card-detail">
                     <strong>Contact:</strong> Unassigned
+                </div>
+                {% endif %}
+
+                {% if event.experience_type %}
+                <div style="margin-top: 8px; margin-bottom: 8px;">
+                    <p style="color: #666; font-size: 0.85em; margin-bottom: 4px; font-weight: 600;">🎯 Experience:</p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                        {% for exp in event.experience_type.split(', ') %}
+                            <span style="background: #FF6B6B; color: white; padding: 3px 8px; border-radius: 10px; font-size: 0.75em; font-weight: 500;">{{ exp }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if event.travel_involved == 'Yes' and event.travelling_member %}
+                <div style="margin-top: 8px; margin-bottom: 8px;">
+                    <p style="color: #666; font-size: 0.85em; margin-bottom: 4px; font-weight: 600;">✈️ Travelling:</p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                        {% set members = event.travelling_member.split(', ') %}
+                        {% for member in members %}
+                            <span style="background: #6c63ff; color: white; padding: 3px 8px; border-radius: 10px; font-size: 0.75em;">
+                                {{ member }}
+                            </span>
+                        {% endfor %}
+                    </div>
                 </div>
                 {% endif %}
 

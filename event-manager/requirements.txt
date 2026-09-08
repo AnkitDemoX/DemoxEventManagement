@@ -1,3 +1,7 @@
 Flask==3.0.0
 Werkzeug==3.0.0
-gunicorn==21.2.0
+
+# Note: LibreOffice for presentation conversion must be installed separately
+# On Windows: Download from https://www.libreoffice.org/download/
+# On Mac: brew install libreoffice
+# On Linux: sudo apt-get install libreoffice

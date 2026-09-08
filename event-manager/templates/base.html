@@ -29,11 +29,17 @@
         }
 
         nav .logo {
-            font-size: 1.5em;
+            font-size: 1.3em;
             font-weight: bold;
             display: flex;
             align-items: center;
             gap: 10px;
+            white-space: nowrap;
+        }
+
+        nav .logo img {
+            height: 35px;
+            width: auto;
         }
 
         nav .nav-links {
@@ -307,14 +313,17 @@
     <!-- Navigation -->
     <nav>
         <div class="logo">
-            🔷 Event Manager
+            <img src="/images/logo.PNG" alt="Pega Logo" style="height: 35px;">
+            <span>Event Manager</span>
         </div>
         <div class="nav-links">
-            <a href="{{ url_for('dashboard') }}">📊 Dashboard</a>
-            <a href="{{ url_for('calendar_view') }}">📅 Calendar</a>
-            <a href="{{ url_for('new_event') }}">➕ New Event</a>
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('calendar_view') }}">Calendar</a>
+            <a href="{{ url_for('new_event') }}">New Event</a>
+            <a href="{{ url_for('resources') }}">Resources</a>
+            <a href="{{ url_for('reports') }}">Reports</a>
             {% if is_admin %}
-            <a href="{{ url_for('admin_panel') }}">⚙️ Admin</a>
+            <a href="{{ url_for('admin_panel') }}">Admin</a>
             {% endif %}
             <div class="user-info">
                 <span>👤 {{ username }}</span>
@@ -332,7 +341,7 @@
 
     <!-- Footer -->
     <footer>
-        <p>🔷 Pega Event Management System | © 2026 Pegasystems Inc.</p>
+        <p>Pega Event Management & Debriefing System | © 2026 Pegasystems Inc. | All Rights Reserved</p>
     </footer>
 
     {% block extra_js %}{% endblock %}

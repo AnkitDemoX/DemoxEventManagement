@@ -26,7 +26,8 @@
       "experiences": "Customer Service, Back Office, Infinity Studio",
       "status": "confirmed",
       "created_by": "ankit",
-      "created_at": "2026-09-03 11:16:56"
+      "created_at": "2026-09-03 11:16:56",
+      "experience_type": "Back office, Customer Service, Infinity Studio"
     },
     {
       "id": 4,
@@ -79,7 +80,7 @@
       "end_time": "16:30",
       "location": "Melbourne",
       "assigned_personnel": "Yianni, Katherine, Nishant, Ankit",
-      "experiences": "Blueprint hackathon and AI Aupskill",
+      "experiences": "Blueprint hackathon and AI upskill",
       "status": "tentative",
       "created_by": "ankit",
       "created_at": "2026-09-03 16:23:56"

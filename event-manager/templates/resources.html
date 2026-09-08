@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Resources{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>📚 Resources</h1>
+    <p>Knowledge articles and important links for the team</p>
+</div>
+
+<div class="grid">
+    {% for resource in resources %}
+    <div class="card">
+        <h3 style="margin-bottom: 15px;">{{ resource.title }}</h3>
+        <a href="{{ resource.link }}" target="_blank" class="btn btn-primary">View →</a>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="card" style="margin-top: 30px;">
+    <h3>📝 About This Page</h3>
+    <p>This page contains important knowledge articles and resources for the Demo X team. The resource list can be updated by editing the <code>resources.json</code> file in your project.</p>
+    <p style="margin-top: 10px; color: #666; font-size: 0.9em;"><strong>To add resources:</strong> Edit resources.json and add entries with title, link, and category.</p>
+</div>
+
+{% endblock %}

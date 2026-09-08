@@ -91,6 +91,60 @@
             <small style="color: #666; margin-top: 5px; display: block;">Hold Ctrl/Cmd to select multiple team members</small>
         </div>
 
+        <!-- Experience Type (Multiselect) -->
+        <div class="form-group">
+            <label for="experience_type">Experience Type (Select One or More) *</label>
+            <select id="experience_type"
+                    name="experience_type"
+                    multiple
+                    required
+                    style="height: 120px; padding: 8px;">
+                {% for exp_type in experience_types %}
+                    <option value="{{ exp_type }}"
+                            {% if event and exp_type in event.experience_type %}selected{% endif %}>
+                        {{ exp_type }}
+                    </option>
+                {% endfor %}
+            </select>
+            <small style="color: #666; margin-top: 5px; display: block;">Hold Ctrl/Cmd to select multiple experience types</small>
+        </div>
+
+        <!-- ITSM Ticket -->
+        <div class="form-group">
+            <label for="itsm_ticket">ITSM Ticket (Optional)</label>
+            <input type="text"
+                   id="itsm_ticket"
+                   name="itsm_ticket"
+                   value="{{ event.itsm_ticket if event else '' }}"
+                   placeholder="e.g., INC123456">
+        </div>
+
+        <!-- Travel Involved -->
+        <div class="form-group">
+            <label for="travel_involved">Travel Involved</label>
+            <select id="travel_involved" name="travel_involved" onchange="toggleTravelMember()">
+                <option value="No" {% if not event or event.travel_involved == 'No' %}selected{% endif %}>No</option>
+                <option value="Yes" {% if event and event.travel_involved == 'Yes' %}selected{% endif %}>Yes</option>
+            </select>
+        </div>
+
+        <!-- Travelling Members (Multiselect) -->
+        <div class="form-group" id="travelling_member_group" style="display: none;">
+            <label for="travelling_member">Team Members Travelling (Select One or More)</label>
+            <select id="travelling_member"
+                    name="travelling_member"
+                    multiple
+                    style="height: 100px; padding: 8px;">
+                {% for member in team_members %}
+                    <option value="{{ member }}"
+                            {% if event and member in event.travelling_member %}selected{% endif %}>
+                        {{ member }}
+                    </option>
+                {% endfor %}
+            </select>
+            <small style="color: #666; margin-top: 5px; display: block;">Hold Ctrl/Cmd to select multiple team members</small>
+        </div>
+
         <!-- Experiences -->
         <div class="form-group">
             <label for="experiences">Experiences & Notes</label>
@@ -125,25 +179,21 @@
     </form>
 </div>
 
-<!-- Help Text -->
-<div class="card" style="max-width: 600px; margin-top: 20px; background: #f0f4ff; border-left: 4px solid #0066CC;">
-    <h3 style="color: #0066CC; margin-bottom: 10px;">ℹ️ Tips</h3>
-    <ul style="margin-left: 20px; color: #333; line-height: 1.6;">
-        <li><strong>Event Name:</strong> A descriptive title for the event (required)</li>
-        <li><strong>Client Name:</strong> The organization or client name (required)</li>
-        <li><strong>Event Date:</strong> When the event will take place (required)</li>
-        <li><strong>Start/End Time:</strong> Event start and end times (optional - helps track session duration)</li>
-        <li><strong>Location:</strong> Physical or virtual location of the event</li>
-        <li><strong>Demo X Contact:</strong> Name of the Demo X team member leading this engagement</li>
-        <li><strong>Experiences:</strong> Detailed notes about the session - what was discussed, outcomes, observations</li>
-        <li><strong>Status:</strong>
-            <ul style="margin-top: 8px;">
-                <li><strong>Tentative:</strong> Event is planned but not yet confirmed</li>
-                <li><strong>Confirmed:</strong> Event is locked in and finalized</li>
-            </ul>
-        </li>
-        <li>After the event, you can generate a professional debriefing document</li>
-    </ul>
-</div>
+<script>
+function toggleTravelMember() {
+    const travelInvolved = document.getElementById('travel_involved').value;
+    const travelMemberGroup = document.getElementById('travelling_member_group');
+    if (travelInvolved === 'Yes') {
+        travelMemberGroup.style.display = 'block';
+    } else {
+        travelMemberGroup.style.display = 'none';
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleTravelMember();
+});
+</script>
 
 {% endblock %}
