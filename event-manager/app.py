@@ -858,24 +858,32 @@ def reports():
 
     # Calculate date ranges based on timeline
     if timeline == 'weekly':
-        # Start from Monday of current week
+        # Show entire current week (Monday to Sunday)
         start_date = today - timedelta(days=today.weekday())
-        end_date = today
+        end_date = start_date + timedelta(days=6)
         date_range_text = f"Current Week ({start_date} to {end_date})"
     elif timeline == 'quarterly':
-        # Start from first day of current quarter
+        # Show entire current quarter
         quarter = (today.month - 1) // 3
         start_date = today.replace(month=quarter * 3 + 1, day=1)
-        end_date = today
+        # Calculate last day of quarter
+        if quarter == 3:  # Q4 (Oct-Dec)
+            end_date = today.replace(month=12, day=31)
+        else:
+            end_date = today.replace(month=quarter * 3 + 3, day=1) - timedelta(days=1)
         date_range_text = f"Current Quarter ({start_date} to {end_date})"
     elif timeline == 'custom' and custom_start and custom_end:
         start_date = datetime.strptime(custom_start, '%Y-%m-%d').date()
         end_date = datetime.strptime(custom_end, '%Y-%m-%d').date()
         date_range_text = f"Custom ({start_date} to {end_date})"
     else:  # monthly (default)
-        # Start from first day of current month
+        # Show entire current month
         start_date = today.replace(day=1)
-        end_date = today
+        # Calculate last day of month
+        if today.month == 12:
+            end_date = today.replace(year=today.year + 1, month=1, day=1) - timedelta(days=1)
+        else:
+            end_date = today.replace(month=today.month + 1, day=1) - timedelta(days=1)
         date_range_text = f"Current Month ({start_date} to {end_date})"
 
     # Filter events by date range
@@ -976,18 +984,29 @@ def export_reports():
 
     # Calculate date ranges based on timeline
     if timeline == 'weekly':
+        # Show entire current week (Monday to Sunday)
         start_date = today - timedelta(days=today.weekday())
-        end_date = today
+        end_date = start_date + timedelta(days=6)
     elif timeline == 'quarterly':
+        # Show entire current quarter
         quarter = (today.month - 1) // 3
         start_date = today.replace(month=quarter * 3 + 1, day=1)
-        end_date = today
+        # Calculate last day of quarter
+        if quarter == 3:  # Q4 (Oct-Dec)
+            end_date = today.replace(month=12, day=31)
+        else:
+            end_date = today.replace(month=quarter * 3 + 3, day=1) - timedelta(days=1)
     elif timeline == 'custom' and custom_start and custom_end:
         start_date = datetime.strptime(custom_start, '%Y-%m-%d').date()
         end_date = datetime.strptime(custom_end, '%Y-%m-%d').date()
     else:  # monthly (default)
+        # Show entire current month
         start_date = today.replace(day=1)
-        end_date = today
+        # Calculate last day of month
+        if today.month == 12:
+            end_date = today.replace(year=today.year + 1, month=1, day=1) - timedelta(days=1)
+        else:
+            end_date = today.replace(month=today.month + 1, day=1) - timedelta(days=1)
 
     # Filter events by date range
     month_events = [e for e in events
