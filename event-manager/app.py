@@ -83,7 +83,7 @@ def is_user_admin(username):
     """Check if user is an admin"""
     admins_data = load_json(ADMINS_FILE)
     for admin in admins_data.get('admins', []):
-        if admin['username'] == username:
+        if admin['username'].lower() == username.lower():
             return True
     return False
 
@@ -105,14 +105,14 @@ def login():
         # Check admins
         admins_data = load_json(ADMINS_FILE)
         for admin in admins_data.get('admins', []):
-            if admin['username'] == username and admin['password'] == password_hash:
+            if admin['username'].lower() == username.lower() and admin['password'] == password_hash:
                 session['username'] = username
                 return redirect(url_for('dashboard'))
 
         # Check users
         users_data = load_json(USERS_FILE)
         for user in users_data.get('users', []):
-            if user['username'] == username and user['password'] == password_hash:
+            if user['username'].lower() == username.lower() and user['password'] == password_hash:
                 session['username'] = username
                 return redirect(url_for('dashboard'))
 
@@ -177,8 +177,15 @@ def calendar_view():
 
     month_name = cal.month_name[month]
 
-    # Sort events for card view
+    # Sort events for card view and add day names
     events_sorted = sorted(events, key=lambda x: x['event_date'])
+    day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    for event in events_sorted:
+        try:
+            event_dt = datetime.strptime(event['event_date'], '%Y-%m-%d')
+            event['day_name'] = day_names[event_dt.weekday()]
+        except:
+            event['day_name'] = 'Unknown'
 
     return render_template('calendar.html',
                          year=year,
@@ -674,7 +681,7 @@ def add_admin():
     }
 
     for admin in admins_data.get('admins', []):
-        if admin['username'] == new_admin['username']:
+        if admin['username'].lower() == new_admin['username'].lower():
             return jsonify({'error': 'Username already exists'}), 400
 
     admins_data['admins'].append(new_admin)
@@ -716,11 +723,11 @@ def add_user():
     # Check if username already exists
     admins_data = load_json(ADMINS_FILE)
     for admin in admins_data.get('admins', []):
-        if admin['username'] == new_user['username']:
+        if admin['username'].lower() == new_user['username'].lower():
             return jsonify({'error': 'Username already exists'}), 400
 
     for user in users_data.get('users', []):
-        if user['username'] == new_user['username']:
+        if user['username'].lower() == new_user['username'].lower():
             return jsonify({'error': 'Username already exists'}), 400
 
     users_data['users'].append(new_user)
