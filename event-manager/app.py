@@ -832,14 +832,51 @@ def resources():
     """Resources page with links and contacts"""
     resources_data = load_json('resources.json') if os.path.exists('resources.json') else {
         'resources': [
-            {'title': 'How to Raise ITSM Ticket', 'link': '#', 'category': 'Knowledge'},
-            {'title': 'How to Engage Other Teams', 'link': '#', 'category': 'Knowledge'}
+            {'title': 'How to Raise ITSM Ticket', 'link': '#'},
+            {'title': 'How to Engage Other Teams', 'link': '#'}
         ]
     }
     return render_template('resources.html',
                          resources=resources_data.get('resources', []),
                          username=session.get('username'),
                          is_admin=is_user_admin(session.get('username')))
+
+@app.route('/resources/add', methods=['POST'])
+@login_required
+def add_resource():
+    """Add a new resource"""
+    title = request.form.get('title', '').strip()
+    link = request.form.get('link', '').strip()
+
+    if not title or not link:
+        return jsonify({'error': 'Title and link are required'}), 400
+
+    # Load existing resources
+    resources_data = load_json('resources.json') if os.path.exists('resources.json') else {'resources': []}
+
+    # Add new resource
+    resources_data['resources'].append({
+        'title': title,
+        'link': link
+    })
+
+    # Save to file
+    save_json(resources_data, 'resources.json')
+
+    return jsonify({'success': True, 'message': 'Resource added successfully'}), 200
+
+@app.route('/resources/delete/<int:index>', methods=['POST'])
+@login_required
+def delete_resource(index):
+    """Delete a resource by index"""
+    resources_data = load_json('resources.json') if os.path.exists('resources.json') else {'resources': []}
+
+    if 0 <= index < len(resources_data['resources']):
+        resources_data['resources'].pop(index)
+        save_json(resources_data, 'resources.json')
+        return jsonify({'success': True, 'message': 'Resource deleted successfully'}), 200
+
+    return jsonify({'error': 'Invalid resource index'}), 400
 
 @app.route('/reports')
 @login_required
@@ -866,11 +903,13 @@ def reports():
         # Show entire current quarter
         quarter = (today.month - 1) // 3
         start_date = today.replace(month=quarter * 3 + 1, day=1)
-        # Calculate last day of quarter
-        if quarter == 3:  # Q4 (Oct-Dec)
+        # Calculate last day of quarter (first day of next quarter - 1 day)
+        quarter_end_month = quarter * 3 + 3  # 3, 6, 9, 12
+        if quarter_end_month == 12:
             end_date = today.replace(month=12, day=31)
         else:
-            end_date = today.replace(month=quarter * 3 + 3, day=1) - timedelta(days=1)
+            # First day of next month, minus 1 day = last day of current quarter
+            end_date = today.replace(month=quarter_end_month + 1, day=1) - timedelta(days=1)
         date_range_text = f"Current Quarter ({start_date} to {end_date})"
     elif timeline == 'custom' and custom_start and custom_end:
         start_date = datetime.strptime(custom_start, '%Y-%m-%d').date()
@@ -991,11 +1030,13 @@ def export_reports():
         # Show entire current quarter
         quarter = (today.month - 1) // 3
         start_date = today.replace(month=quarter * 3 + 1, day=1)
-        # Calculate last day of quarter
-        if quarter == 3:  # Q4 (Oct-Dec)
+        # Calculate last day of quarter (first day of next quarter - 1 day)
+        quarter_end_month = quarter * 3 + 3  # 3, 6, 9, 12
+        if quarter_end_month == 12:
             end_date = today.replace(month=12, day=31)
         else:
-            end_date = today.replace(month=quarter * 3 + 3, day=1) - timedelta(days=1)
+            # First day of next month, minus 1 day = last day of current quarter
+            end_date = today.replace(month=quarter_end_month + 1, day=1) - timedelta(days=1)
     elif timeline == 'custom' and custom_start and custom_end:
         start_date = datetime.strptime(custom_start, '%Y-%m-%d').date()
         end_date = datetime.strptime(custom_end, '%Y-%m-%d').date()

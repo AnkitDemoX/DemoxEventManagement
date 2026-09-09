@@ -41,7 +41,11 @@
       "experiences": "Blueprint hackathon, hands on experienc customer service, back office and infinity studio",
       "status": "confirmed",
       "created_by": "ankit",
-      "created_at": "2026-09-03 11:18:41"
+      "created_at": "2026-09-03 11:18:41",
+      "experience_type": "Back office, Customer Service",
+      "travel_involved": "No",
+      "travelling_member": "",
+      "itsm_ticket": ""
     },
     {
       "id": 5,
@@ -75,7 +79,7 @@
       "id": 7,
       "event_name": "ANZ Upskill and Hackathon Engagement",
       "client_name": "ANZ",
-      "event_date": "2026-09-08",
+      "event_date": "2026-09-22",
       "start_time": "09:30",
       "end_time": "16:30",
       "location": "Melbourne",
@@ -84,7 +88,10 @@
       "status": "tentative",
       "created_by": "ankit",
       "created_at": "2026-09-03 16:23:56",
-      "experience_type": "AI Assisted Development, Infinity Studio"
+      "experience_type": "AI Assisted Development, Infinity Studio",
+      "travel_involved": "No",
+      "travelling_member": "",
+      "itsm_ticket": ""
     }
   ]
 }
