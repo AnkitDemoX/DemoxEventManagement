@@ -184,6 +184,8 @@
             <select name="status" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
                 <option value="tentative" {% if event.status == 'tentative' %}selected{% endif %}>Change to: Tentative</option>
                 <option value="confirmed" {% if event.status == 'confirmed' %}selected{% endif %}>Change to: Confirmed</option>
+                <option value="completed" {% if event.status == 'completed' %}selected{% endif %}>Change to: Completed</option>
+                <option value="cancelled" {% if event.status == 'cancelled' %}selected{% endif %}>Change to: Cancelled</option>
             </select>
             <button type="submit" class="btn btn-primary">🔄 Update Status</button>
         </form>
@@ -194,6 +196,10 @@
         <!-- Debrief Button -->
         {% if event.status == 'completed' %}
             <a href="{{ url_for('launch_debrief_form', event_id=event.id) }}" class="btn btn-success">📄 Generate Debriefing</a>
+        {% elif event.status == 'cancelled' %}
+            <button class="btn btn-success" disabled style="opacity: 0.5; cursor: not-allowed;">
+                📄 Cannot generate debriefing for cancelled events
+            </button>
         {% else %}
             <button class="btn btn-success" disabled style="opacity: 0.5; cursor: not-allowed;">
                 📄 Mark as Completed to Generate Debriefing

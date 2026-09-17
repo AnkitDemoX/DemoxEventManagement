@@ -2,6 +2,14 @@
 
 {% block title %}{% if event %}Edit{% else %}Create{% endif %} Event{% endblock %}
 
+{% block extra_css %}
+<style>
+    .form-group select[multiple] {
+        width: 100% !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <div class="page-header">
@@ -76,11 +84,13 @@
         <!-- Demo X Contact (Multiselect) -->
         <div class="form-group">
             <label for="assigned_personnel">Demo X Contact (Select One or More)</label>
+            <div id="assigned_personnel_display" class="multiselect-display" style="margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 8px;"></div>
             <select id="assigned_personnel"
                     name="assigned_personnel"
                     multiple
                     required
-                    style="height: 120px; padding: 8px;">
+                    style="height: 120px; padding: 8px; width: 100%;"
+                    onchange="updateMultiselectDisplay('assigned_personnel')">
                 {% for member in team_members %}
                     <option value="{{ member }}"
                             {% if event and member in event.assigned_personnel %}selected{% endif %}>
@@ -88,17 +98,19 @@
                     </option>
                 {% endfor %}
             </select>
-            <small style="color: #666; margin-top: 5px; display: block;">Hold Ctrl/Cmd to select multiple team members</small>
+            <small style="color: #666; margin-top: 5px; display: block;">Select multiple team members</small>
         </div>
 
         <!-- Experience Type (Multiselect) -->
         <div class="form-group">
             <label for="experience_type">Experience Type (Select One or More) *</label>
+            <div id="experience_type_display" class="multiselect-display" style="margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 8px;"></div>
             <select id="experience_type"
                     name="experience_type"
                     multiple
                     required
-                    style="height: 120px; padding: 8px;">
+                    style="height: 120px; padding: 8px; width: 100%;"
+                    onchange="updateMultiselectDisplay('experience_type')">
                 {% for exp_type in experience_types %}
                     <option value="{{ exp_type }}"
                             {% if event and exp_type in event.experience_type %}selected{% endif %}>
@@ -106,7 +118,7 @@
                     </option>
                 {% endfor %}
             </select>
-            <small style="color: #666; margin-top: 5px; display: block;">Hold Ctrl/Cmd to select multiple experience types</small>
+            <small style="color: #666; margin-top: 5px; display: block;">Select multiple experience types</small>
         </div>
 
         <!-- ITSM Ticket -->
@@ -131,10 +143,12 @@
         <!-- Travelling Members (Multiselect) -->
         <div class="form-group" id="travelling_member_group" style="display: none;">
             <label for="travelling_member">Team Members Travelling (Select One or More)</label>
+            <div id="travelling_member_display" class="multiselect-display" style="margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 8px;"></div>
             <select id="travelling_member"
                     name="travelling_member"
                     multiple
-                    style="height: 100px; padding: 8px;">
+                    style="height: 100px; padding: 8px; width: 100%;"
+                    onchange="updateMultiselectDisplay('travelling_member')">
                 {% for member in team_members %}
                     <option value="{{ member }}"
                             {% if event and member in event.travelling_member %}selected{% endif %}>
@@ -142,7 +156,7 @@
                     </option>
                 {% endfor %}
             </select>
-            <small style="color: #666; margin-top: 5px; display: block;">Hold Ctrl/Cmd to select multiple team members</small>
+            <small style="color: #666; margin-top: 5px; display: block;">Select multiple team members</small>
         </div>
 
         <!-- Experiences -->
@@ -166,6 +180,9 @@
                 <option value="completed" {% if event and event.status == 'completed' %}selected{% endif %}>
                     Completed (🎉 Done - Ready for Debriefing)
                 </option>
+                <option value="cancelled" {% if event and event.status == 'cancelled' %}selected{% endif %}>
+                    Cancelled (❌ Event Cancelled)
+                </option>
             </select>
         </div>
 
@@ -180,6 +197,19 @@
 </div>
 
 <script>
+// Display selected items as badges
+function updateMultiselectDisplay(fieldId) {
+    const select = document.getElementById(fieldId);
+    const displayDiv = document.getElementById(fieldId + '_display');
+    const selectedOptions = Array.from(select.selectedOptions).map(option => option.text);
+
+    displayDiv.innerHTML = selectedOptions.map(text =>
+        `<span style="background: #0066CC; color: white; padding: 6px 12px; border-radius: 20px; font-size: 0.9em; font-weight: 500;">
+            ${text}
+        </span>`
+    ).join('');
+}
+
 function toggleTravelMember() {
     const travelInvolved = document.getElementById('travel_involved').value;
     const travelMemberGroup = document.getElementById('travelling_member_group');
@@ -193,6 +223,9 @@ function toggleTravelMember() {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     toggleTravelMember();
+    updateMultiselectDisplay('assigned_personnel');
+    updateMultiselectDisplay('experience_type');
+    updateMultiselectDisplay('travelling_member');
 });
 </script>
 
