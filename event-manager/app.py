@@ -46,7 +46,9 @@ EXPERIENCE_TYPES = [
     'AI Assisted Development',
     'Infinity Studio',
     'NBA Game',
-    'Customer Engagement Studio'
+    'Customer Engagement Studio',
+    'Blueprint Hackathon',
+    'Onboarding session'
 ]
 
 # ==================== JSON File Handling ====================
