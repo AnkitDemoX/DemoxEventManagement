@@ -48,7 +48,10 @@ EXPERIENCE_TYPES = [
     'NBA Game',
     'Customer Engagement Studio',
     'Blueprint Hackathon',
-    'Onboarding session'
+    'Onboarding session',
+    'Offsite',
+    'SKO',
+    'Pega World'
 ]
 
 # ==================== JSON File Handling ====================
