@@ -9,7 +9,7 @@ import base64
 import subprocess
 import io
 
-app = Flask(__name__)
+app = Flask(__name__,static_folder='images')
 app.secret_key = 'your-secret-key-change-this'
 
 # File paths
