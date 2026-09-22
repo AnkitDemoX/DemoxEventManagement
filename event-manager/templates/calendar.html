@@ -629,17 +629,6 @@
     </table>
 
     <!-- Legend -->
-    <div class="legend" id="monthLegend">
-        <div class="legend-item">
-            <div class="legend-color confirmed"></div>
-            <span>Confirmed</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color tentative"></div>
-            <span>Tentative</span>
-        </div>
-    </div>
-
     <!-- Card View -->
     <div class="card-view" id="cardView">
         {% for event in all_events %}
@@ -805,7 +794,6 @@
 function switchView(view) {
     const tableContainer = document.querySelector('.calendar-table');
     const cardView = document.getElementById('cardView');
-    const legend = document.getElementById('monthLegend');
     const buttons = document.querySelectorAll('.view-toggle');
 
     // Remove active class from all buttons
@@ -815,7 +803,6 @@ function switchView(view) {
         // Show month view
         tableContainer.classList.remove('hidden');
         cardView.classList.remove('active');
-        legend.style.display = 'flex';
 
         // Add active class to month button
         buttons[0].classList.add('active');
@@ -823,7 +810,6 @@ function switchView(view) {
         // Show card view
         tableContainer.classList.add('hidden');
         cardView.classList.add('active');
-        legend.style.display = 'none';
 
         // Add active class to card button
         buttons[1].classList.add('active');

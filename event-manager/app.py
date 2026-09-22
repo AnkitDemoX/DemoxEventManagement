@@ -284,7 +284,8 @@ def calendar_view():
                          next_year=next_year,
                          next_month=next_month,
                          username=session.get('username'),
-                         is_admin=is_user_admin(session.get('username')))
+                         is_admin=is_user_admin(session.get('username')),
+                         team_members=load_team_members())
 
 # ==================== Events CRUD ====================
 
