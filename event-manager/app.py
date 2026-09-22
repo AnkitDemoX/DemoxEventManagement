@@ -9,16 +9,20 @@ import base64
 import subprocess
 import io
 
-app = Flask(__name__,static_folder='images')
+app = Flask(__name__, static_folder='images')
 app.secret_key = 'your-secret-key-change-this'
 
-# File paths
-EVENTS_FILE = 'events.json'
-ADMINS_FILE = 'admins.json'
-USERS_FILE = 'users.json'
-TEAM_MEMBERS_FILE = 'team_members.json'
-UPLOAD_FOLDER = 'uploads/temp'
-BACKUP_DIR = 'backups'
+# Base directory - use absolute paths to ensure files persist correctly
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# File paths - absolute paths to prevent data loss
+EVENTS_FILE = os.path.join(BASE_DIR, 'events.json')
+ADMINS_FILE = os.path.join(BASE_DIR, 'admins.json')
+USERS_FILE = os.path.join(BASE_DIR, 'users.json')
+TEAM_MEMBERS_FILE = os.path.join(BASE_DIR, 'team_members.json')
+RESOURCES_FILE = os.path.join(BASE_DIR, 'resources.json')
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads/temp')
+BACKUP_DIR = os.path.join(BASE_DIR, 'backups')
 
 # Ensure folders exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -835,7 +839,7 @@ def serve_image(filename):
 @login_required
 def resources():
     """Resources page with links and contacts"""
-    resources_data = load_json('resources.json') if os.path.exists('resources.json') else {
+    resources_data = load_json(RESOURCES_FILE) if os.path.exists(RESOURCES_FILE) else {
         'resources': [
             {'title': 'How to Raise ITSM Ticket', 'link': '#'},
             {'title': 'How to Engage Other Teams', 'link': '#'}
@@ -857,7 +861,7 @@ def add_resource():
         return jsonify({'error': 'Title and link are required'}), 400
 
     # Load existing resources
-    resources_data = load_json('resources.json') if os.path.exists('resources.json') else {'resources': []}
+    resources_data = load_json(RESOURCES_FILE) if os.path.exists(RESOURCES_FILE) else {'resources': []}
 
     # Add new resource
     resources_data['resources'].append({
@@ -866,7 +870,7 @@ def add_resource():
     })
 
     # Save to file
-    save_json(resources_data, 'resources.json')
+    save_json(resources_data, RESOURCES_FILE)
 
     return jsonify({'success': True, 'message': 'Resource added successfully'}), 200
 
@@ -874,11 +878,11 @@ def add_resource():
 @login_required
 def delete_resource(index):
     """Delete a resource by index"""
-    resources_data = load_json('resources.json') if os.path.exists('resources.json') else {'resources': []}
+    resources_data = load_json(RESOURCES_FILE) if os.path.exists(RESOURCES_FILE) else {'resources': []}
 
     if 0 <= index < len(resources_data['resources']):
         resources_data['resources'].pop(index)
-        save_json(resources_data, 'resources.json')
+        save_json(resources_data, RESOURCES_FILE)
         return jsonify({'success': True, 'message': 'Resource deleted successfully'}), 200
 
     return jsonify({'error': 'Invalid resource index'}), 400
