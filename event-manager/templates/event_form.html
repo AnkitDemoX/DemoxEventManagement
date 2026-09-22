@@ -18,7 +18,7 @@
 </div>
 
 <div class="card" style="max-width: 600px;">
-    <form method="POST">
+    <form method="POST" data-is-admin="{{ is_admin|lower }}">
         <!-- Event Name -->
         <div class="form-group">
             <label for="event_name">Event Name *</label>
@@ -103,7 +103,7 @@
 
         <!-- Experience Type (Multiselect) -->
         <div class="form-group">
-            <label for="experience_type">Experience / Event (Select One or More) *</label>
+            <label for="experience_type">Experience Type (Select One or More) *</label>
             <div id="experience_type_display" class="multiselect-display" style="margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 8px;"></div>
             <select id="experience_type"
                     name="experience_type"
@@ -220,12 +220,102 @@ function toggleTravelMember() {
     }
 }
 
+// Check for leave conflicts when event date or team members change
+function checkLeaveConflicts() {
+    const eventDate = document.getElementById('event_date').value;
+    if (!eventDate) return;
+
+    fetch('/api/check-team-leave', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ date: eventDate })
+    })
+    .then(res => res.json())
+    .then(data => {
+        updateLeaveWarnings(data.on_leave);
+    })
+    .catch(err => console.error('Error checking leave:', err));
+}
+
+function updateLeaveWarnings(onLeave) {
+    const select = document.getElementById('assigned_personnel');
+    const options = select.querySelectorAll('option');
+
+    // Reset all options
+    options.forEach(opt => {
+        opt.style.color = '#333';
+        opt.disabled = false;
+        opt.title = '';
+    });
+
+    // Disable/warn for people on leave
+    const isAdmin = document.querySelector('form').getAttribute('data-is-admin') === 'true';
+    onLeave.forEach(person => {
+        options.forEach(opt => {
+            if (opt.text.trim() === person.trim()) {
+                opt.style.color = '#FF6666';
+                opt.title = `${person} is on leave on this date`;
+                // For regular users (non-admin), prevent selection
+                if (!isAdmin) {
+                    opt.disabled = true;
+                }
+            }
+        });
+    });
+
+    // Show warning if any selected person is on leave
+    const selectedOnLeave = Array.from(select.selectedOptions).filter(opt =>
+        onLeave.includes(opt.text.trim())
+    );
+
+    if (selectedOnLeave.length > 0) {
+        showLeaveWarning(selectedOnLeave.map(o => o.text).join(', '));
+    } else {
+        hideLeaveWarning();
+    }
+}
+
+function showLeaveWarning(names) {
+    let warning = document.getElementById('leaveWarning');
+    if (!warning) {
+        warning = document.createElement('div');
+        warning.id = 'leaveWarning';
+        warning.style.cssText = `
+            background: #FFE5E5;
+            border: 2px solid #FF6666;
+            color: #d9534f;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        `;
+        const form = document.querySelector('form');
+        form.insertBefore(warning, form.firstChild);
+    }
+    warning.innerHTML = `⚠️ <strong>${names}</strong> is/are on leave on this date!`;
+    warning.style.display = 'block';
+}
+
+function hideLeaveWarning() {
+    const warning = document.getElementById('leaveWarning');
+    if (warning) {
+        warning.style.display = 'none';
+    }
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     toggleTravelMember();
     updateMultiselectDisplay('assigned_personnel');
     updateMultiselectDisplay('experience_type');
     updateMultiselectDisplay('travelling_member');
+    checkLeaveConflicts();
+
+    // Add event listeners for leave conflict checking
+    document.getElementById('event_date').addEventListener('change', checkLeaveConflicts);
+    document.getElementById('assigned_personnel').addEventListener('change', checkLeaveConflicts);
 });
 </script>
 

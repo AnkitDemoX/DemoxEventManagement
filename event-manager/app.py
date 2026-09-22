@@ -21,6 +21,7 @@ ADMINS_FILE = os.path.join(BASE_DIR, 'admins.json')
 USERS_FILE = os.path.join(BASE_DIR, 'users.json')
 TEAM_MEMBERS_FILE = os.path.join(BASE_DIR, 'team_members.json')
 RESOURCES_FILE = os.path.join(BASE_DIR, 'resources.json')
+LEAVES_FILE = os.path.join(BASE_DIR, 'leaves.json')
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads/temp')
 BACKUP_DIR = os.path.join(BASE_DIR, 'backups')
 
@@ -81,6 +82,44 @@ def save_json(data, filename):
 
     with open(filename, 'w') as f:
         json.dump(data, f, indent=2)
+
+def is_user_on_leave(username, check_date):
+    """Check if user is on leave on a specific date"""
+    try:
+        leaves_data = load_json(LEAVES_FILE)
+        if not leaves_data or 'leaves' not in leaves_data:
+            return False
+
+        check_date_obj = datetime.strptime(check_date, '%Y-%m-%d').date()
+
+        for leave in leaves_data['leaves']:
+            if leave['username'] == username:
+                start_date = datetime.strptime(leave['start_date'], '%Y-%m-%d').date()
+                end_date = datetime.strptime(leave['end_date'], '%Y-%m-%d').date()
+                if start_date <= check_date_obj <= end_date:
+                    return True
+        return False
+    except:
+        return False
+
+def get_team_leaves_on_date(check_date):
+    """Get all team members on leave on a specific date"""
+    try:
+        leaves_data = load_json(LEAVES_FILE)
+        if not leaves_data or 'leaves' not in leaves_data:
+            return []
+
+        on_leave = []
+        check_date_obj = datetime.strptime(check_date, '%Y-%m-%d').date()
+
+        for leave in leaves_data['leaves']:
+            start_date = datetime.strptime(leave['start_date'], '%Y-%m-%d').date()
+            end_date = datetime.strptime(leave['end_date'], '%Y-%m-%d').date()
+            if start_date <= check_date_obj <= end_date:
+                on_leave.append(leave['username'])
+        return on_leave
+    except:
+        return []
 
 def load_team_members():
     """Load team members from JSON file"""
@@ -886,6 +925,112 @@ def delete_resource(index):
         return jsonify({'success': True, 'message': 'Resource deleted successfully'}), 200
 
     return jsonify({'error': 'Invalid resource index'}), 400
+
+# ==================== LEAVE MANAGEMENT ROUTES ====================
+
+@app.route('/leaves/manage')
+@login_required
+def manage_leaves():
+    """Leave management page (accessed from calendar)"""
+    username = session.get('username')
+    is_admin = is_user_admin(username)
+    leaves_data = load_json(LEAVES_FILE) if os.path.exists(LEAVES_FILE) else {'leaves': []}
+
+    # Regular users see only their leaves; admins see all
+    if is_admin:
+        leaves = leaves_data.get('leaves', [])
+    else:
+        leaves = [l for l in leaves_data.get('leaves', []) if l['username'] == username]
+
+    return jsonify({
+        'leaves': leaves,
+        'team_members': load_team_members(),
+        'username': username,
+        'is_admin': is_admin
+    })
+
+@app.route('/leaves/add', methods=['POST'])
+@login_required
+def add_leave():
+    """Add a new leave"""
+    username = session.get('username')
+    is_admin = is_user_admin(username)
+
+    data = request.get_json()
+    leave_username = data.get('username', '').strip()
+    start_date = data.get('start_date', '').strip()
+    end_date = data.get('end_date', '').strip()
+    reason = data.get('reason', '').strip()
+
+    # Regular users can only add leaves for themselves
+    if not is_admin and leave_username != username:
+        return jsonify({'error': 'You can only add leaves for yourself'}), 403
+
+    if not leave_username or not start_date or not end_date:
+        return jsonify({'error': 'Username, start date, and end date are required'}), 400
+
+    # Validate dates
+    try:
+        start_date_obj = datetime.strptime(start_date, '%Y-%m-%d')
+        end_date_obj = datetime.strptime(end_date, '%Y-%m-%d')
+        if start_date_obj > end_date_obj:
+            return jsonify({'error': 'Start date must be before end date'}), 400
+    except:
+        return jsonify({'error': 'Invalid date format'}), 400
+
+    leaves_data = load_json(LEAVES_FILE) if os.path.exists(LEAVES_FILE) else {'leaves': []}
+
+    # Create leave entry
+    leave_id = str(int(datetime.now().timestamp() * 1000))
+    new_leave = {
+        'id': leave_id,
+        'username': leave_username,
+        'start_date': start_date,
+        'end_date': end_date,
+        'reason': reason,
+        'created_by': username,
+        'created_at': datetime.now(MELBOURNE_TZ).strftime('%Y-%m-%d %H:%M:%S')
+    }
+
+    leaves_data['leaves'].append(new_leave)
+    save_json(leaves_data, LEAVES_FILE)
+
+    return jsonify({'success': True, 'message': 'Leave added successfully', 'leave': new_leave}), 201
+
+@app.route('/leaves/delete/<leave_id>', methods=['POST'])
+@login_required
+def delete_leave(leave_id):
+    """Delete a leave"""
+    username = session.get('username')
+    is_admin = is_user_admin(username)
+
+    leaves_data = load_json(LEAVES_FILE) if os.path.exists(LEAVES_FILE) else {'leaves': []}
+
+    # Find and delete the leave
+    for i, leave in enumerate(leaves_data['leaves']):
+        if leave['id'] == leave_id:
+            # Check permissions: admins can delete any, users can delete only their own
+            if not is_admin and leave['username'] != username:
+                return jsonify({'error': 'You can only delete your own leaves'}), 403
+
+            leaves_data['leaves'].pop(i)
+            save_json(leaves_data, LEAVES_FILE)
+            return jsonify({'success': True, 'message': 'Leave deleted successfully'}), 200
+
+    return jsonify({'error': 'Leave not found'}), 404
+
+@app.route('/api/check-team-leave', methods=['POST'])
+@login_required
+def check_team_leave():
+    """Check which team members are on leave on a specific date"""
+    data = request.get_json()
+    event_date = data.get('date', '')
+
+    if not event_date:
+        return jsonify({'error': 'Date is required'}), 400
+
+    on_leave = get_team_leaves_on_date(event_date)
+    return jsonify({'on_leave': on_leave}), 200
 
 @app.route('/reports')
 @login_required

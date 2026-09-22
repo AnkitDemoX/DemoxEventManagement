@@ -327,6 +327,207 @@
             justify-content: center;
         }
     }
+
+    /* Legend Styles */
+    .calendar-legend {
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 20px;
+        margin-bottom: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 30px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .legend-color {
+        width: 24px;
+        height: 24px;
+        border-radius: 3px;
+        border: 1px solid #999;
+    }
+
+    /* Leave Modal Styles */
+    .manage-leaves-btn {
+        padding: 10px 20px;
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 600;
+        margin-right: 10px;
+    }
+
+    .manage-leaves-btn:hover {
+        background: #218838;
+    }
+
+    .leave-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    }
+
+    .leave-modal.show {
+        display: flex;
+    }
+
+    .leave-modal-content {
+        background: white;
+        border-radius: 8px;
+        padding: 30px;
+        max-width: 600px;
+        width: 100%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+
+    .leave-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #0066CC;
+        padding-bottom: 15px;
+    }
+
+    .leave-modal-header h2 {
+        color: #0066CC;
+        margin: 0;
+    }
+
+    .close-modal {
+        background: none;
+        border: none;
+        font-size: 28px;
+        cursor: pointer;
+        color: #999;
+    }
+
+    .leave-form {
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .leave-form-group {
+        margin-bottom: 15px;
+    }
+
+    .leave-form-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #333;
+    }
+
+    .leave-form-group input, .leave-form-group select, .leave-form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.95em;
+    }
+
+    .leave-list {
+        margin-top: 20px;
+    }
+
+    .leave-item {
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 15px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+    }
+
+    .leave-item-info {
+        flex: 1;
+    }
+
+    .leave-item-info p {
+        margin: 5px 0;
+        color: #666;
+        font-size: 0.9em;
+    }
+
+    .leave-item-info strong {
+        color: #0066CC;
+    }
+
+    .leave-item-delete {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 0.85em;
+    }
+
+    .leave-item-delete:hover {
+        background: #c82333;
+    }
+
+    .submit-btn {
+        background: #0066CC;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    .submit-btn:hover {
+        background: #004B99;
+    }
+
+    /* Leave indicator on calendar days */
+    .day-has-leave {
+        background-color: #E0E8F8 !important;
+        border-color: #9DB4D4 !important;
+    }
+
+    .day-event.confirmed {
+        background-color: #90EE90;
+        color: #333;
+    }
+
+    .day-event.tentative {
+        background-color: #FF9999;
+        color: white;
+    }
+
+    .day-event.completed {
+        background-color: #87CEEB;
+        color: #333;
+    }
+
+    .day-event.cancelled {
+        background-color: #D3D3D3;
+        color: #333;
+        text-decoration: line-through;
+    }
 </style>
 {% endblock %}
 
@@ -352,6 +553,31 @@
             <a href="{{ url_for('calendar_view') }}">Today</a>
             <a href="{{ url_for('calendar_view', year=next_year, month=next_month) }}">Next &rarr;</a>
         </div>
+        <button class="manage-leaves-btn" onclick="openLeaveModal()">🏝️ Manage Leaves</button>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="calendar-legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #90EE90;"></div>
+            <span>Confirmed Event</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #FF9999;"></div>
+            <span>Tentative Event</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #87CEEB;"></div>
+            <span>Completed Event</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #D3D3D3;"></div>
+            <span>Cancelled Event</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #E0E8F8;"></div>
+            <span>Leave Day</span>
         </div>
     </div>
 
@@ -525,6 +751,56 @@
     </div>
 </div>
 
+<!-- Leave Management Modal -->
+<div id="leaveModal" class="leave-modal">
+    <div class="leave-modal-content">
+        <div class="leave-modal-header">
+            <h2>🏝️ Manage Leaves</h2>
+            <button class="close-modal" onclick="closeLeaveModal()">&times;</button>
+        </div>
+
+        <form id="leaveForm" class="leave-form" onsubmit="addLeave(event)">
+            <h3 style="color: #0066CC; margin-bottom: 15px;">Add New Leave</h3>
+
+            <div class="leave-form-group">
+                <label for="leaveUsername">Team Member {% if not is_admin %}(Your Name){% endif %} *</label>
+                {% if is_admin %}
+                    <select id="leaveUsername" required>
+                        <option value="">Select Team Member</option>
+                        {% for member in team_members %}
+                            <option value="{{ member }}">{{ member }}</option>
+                        {% endfor %}
+                    </select>
+                {% else %}
+                    <input type="text" id="leaveUsername" value="{{ username }}" readonly>
+                {% endif %}
+            </div>
+
+            <div class="leave-form-group">
+                <label for="leaveStart">Start Date *</label>
+                <input type="date" id="leaveStart" required>
+            </div>
+
+            <div class="leave-form-group">
+                <label for="leaveEnd">End Date *</label>
+                <input type="date" id="leaveEnd" required>
+            </div>
+
+            <div class="leave-form-group">
+                <label for="leaveReason">Reason (Optional)</label>
+                <textarea id="leaveReason" placeholder="e.g., Vacation, Sick Leave, Personal..." rows="3"></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn" style="width: 100%;">Add Leave</button>
+        </form>
+
+        <div class="leave-list">
+            <h3 style="color: #0066CC; margin-bottom: 15px;">Your Leaves</h3>
+            <div id="leavesList"></div>
+        </div>
+    </div>
+</div>
+
 <script>
 function switchView(view) {
     const tableContainer = document.querySelector('.calendar-table');
@@ -553,6 +829,156 @@ function switchView(view) {
         buttons[1].classList.add('active');
     }
 }
+
+// ==================== LEAVE MANAGEMENT FUNCTIONS ====================
+function openLeaveModal() {
+    document.getElementById('leaveModal').classList.add('show');
+    loadLeaves();
+}
+
+function closeLeaveModal() {
+    document.getElementById('leaveModal').classList.remove('show');
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('leaveModal');
+    if (event.target === modal) {
+        modal.classList.remove('show');
+    }
+}
+
+function loadLeaves() {
+    fetch('/leaves/manage')
+        .then(res => res.json())
+        .then(data => {
+            const leavesList = document.getElementById('leavesList');
+            leavesList.innerHTML = '';
+
+            if (data.leaves.length === 0) {
+                leavesList.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No leaves added yet</p>';
+                return;
+            }
+
+            data.leaves.forEach((leave, index) => {
+                const item = document.createElement('div');
+                item.className = 'leave-item';
+                item.innerHTML = `
+                    <div class="leave-item-info">
+                        <p><strong>${leave.username}</strong> - ${leave.start_date} to ${leave.end_date}</p>
+                        <p>${leave.reason || 'No reason provided'}</p>
+                    </div>
+                    <button class="leave-item-delete" onclick="deleteLeave('${leave.id}')">Delete</button>
+                `;
+                leavesList.appendChild(item);
+            });
+        })
+        .catch(err => console.error('Error loading leaves:', err));
+}
+
+function addLeave(event) {
+    event.preventDefault();
+
+    const username = document.getElementById('leaveUsername').value;
+    const startDate = document.getElementById('leaveStart').value;
+    const endDate = document.getElementById('leaveEnd').value;
+    const reason = document.getElementById('leaveReason').value;
+
+    if (!username || !startDate || !endDate) {
+        alert('Please fill in all required fields');
+        return;
+    }
+
+    fetch('/leaves/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            username: username,
+            start_date: startDate,
+            end_date: endDate,
+            reason: reason
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert('Leave added successfully');
+            document.getElementById('leaveForm').reset();
+            loadLeaves();
+            location.reload(); // Refresh to update calendar
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        alert('Error adding leave');
+    });
+}
+
+function deleteLeave(leaveId) {
+    if (!confirm('Are you sure you want to delete this leave?')) {
+        return;
+    }
+
+    fetch(`/leaves/delete/${leaveId}`, {
+        method: 'POST'
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert('Leave deleted successfully');
+            loadLeaves();
+            location.reload(); // Refresh to update calendar
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        alert('Error deleting leave');
+    });
+}
+
+// Load leaves data for calendar display
+function loadCalendarLeaves() {
+    fetch('/leaves/manage')
+        .then(res => res.json())
+        .then(data => {
+            // Highlight leave days on calendar
+            data.leaves.forEach(leave => {
+                const start = new Date(leave.start_date);
+                const end = new Date(leave.end_date);
+
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    const dateStr = d.getFullYear() + '-' +
+                                   String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                                   String(d.getDate()).padStart(2, '0');
+
+                    // Mark leave days on calendar
+                    const cells = document.querySelectorAll('td');
+                    cells.forEach(cell => {
+                        const dayNum = cell.querySelector('.day-number');
+                        if (dayNum) {
+                            const eventDates = cell.querySelectorAll('.day-event');
+                            // Only mark as leave if no events on that day
+                            if (eventDates.length === 0) {
+                                cell.classList.add('day-has-leave');
+                            }
+                        }
+                    });
+                }
+            });
+        })
+        .catch(err => console.error('Error loading calendar leaves:', err));
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadCalendarLeaves();
+});
 </script>
 
 {% endblock %}
