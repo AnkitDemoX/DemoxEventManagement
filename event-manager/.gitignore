@@ -23,13 +23,6 @@ venv/
 ENV/
 env/
 
-# Data files - DO NOT COMMIT (keep server versions intact)
-events.json
-users.json
-admins.json
-team_members.json
-resources.json
-
 # Uploads and backups
 uploads/
 backups/
