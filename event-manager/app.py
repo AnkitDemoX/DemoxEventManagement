@@ -28,7 +28,13 @@ BACKUP_DIR = os.path.join(BASE_DIR, 'backups')
 # Ensure folders exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(BACKUP_DIR, exist_ok=True)
-os.makedirs('images', exist_ok=True)
+os.makedirs(os.path.join(BASE_DIR, 'images'), exist_ok=True)
+
+# Debug: Log file paths on startup
+print(f"✅ App Base Directory: {BASE_DIR}")
+print(f"📁 Events File: {EVENTS_FILE}")
+print(f"📁 Users File: {USERS_FILE}")
+print(f"📁 Leaves File: {LEAVES_FILE}")
 
 # Melbourne timezone - handles DST automatically
 # AEST (UTC+10): April-September | AEDT (UTC+11): October-March
@@ -73,15 +79,32 @@ def load_json(filename):
 
 def save_json(data, filename):
     """Save JSON file with backup"""
-    if os.path.exists(filename):
-        backup_name = f"{BACKUP_DIR}/{os.path.basename(filename)}.backup"
-        with open(filename, 'r') as f:
-            backup_data = f.read()
-        with open(backup_name, 'w') as f:
-            f.write(backup_data)
+    try:
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
 
-    with open(filename, 'w') as f:
-        json.dump(data, f, indent=2)
+        if os.path.exists(filename):
+            backup_name = f"{BACKUP_DIR}/{os.path.basename(filename)}.backup"
+            with open(filename, 'r') as f:
+                backup_data = f.read()
+            with open(backup_name, 'w') as f:
+                f.write(backup_data)
+
+        with open(filename, 'w') as f:
+            json.dump(data, f, indent=2)
+
+        # Verify file was saved
+        if os.path.exists(filename) and os.path.getsize(filename) > 0:
+            print(f"✅ Saved: {filename}")
+            return True
+        else:
+            print(f"⚠️ WARNING: File {filename} was not saved properly!")
+            return False
+    except Exception as e:
+        print(f"❌ ERROR saving {filename}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 def is_user_on_leave(username, check_date):
     """Check if user is on leave on a specific date"""
