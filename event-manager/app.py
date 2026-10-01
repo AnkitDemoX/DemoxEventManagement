@@ -72,9 +72,13 @@ def load_json(filename):
     if os.path.exists(filename):
         try:
             with open(filename, 'r') as f:
-                return json.load(f)
-        except:
+                data = json.load(f)
+                print(f"✅ Loaded {os.path.basename(filename)}: {data}", flush=True)
+                return data
+        except Exception as e:
+            print(f"❌ Error reading {filename}: {e}", flush=True)
             return {} if filename == ADMINS_FILE else {"events": []}
+    print(f"⚠️ File not found: {filename}", flush=True)
     return {} if filename == ADMINS_FILE else {"events": []}
 
 def save_json(data, filename):
@@ -151,14 +155,22 @@ def load_team_members():
 
 def sync_team_members():
     """Sync team_members.json with users from users.json"""
+    print(f"🔍 DEBUG: sync_team_members() starting...", flush=True)
+    print(f"🔍 DEBUG: TEAM_MEMBERS_FILE = {TEAM_MEMBERS_FILE}", flush=True)
+    print(f"🔍 DEBUG: File exists? {os.path.exists(TEAM_MEMBERS_FILE)}", flush=True)
+
     users_data = load_json(USERS_FILE)
+    print(f"🔍 DEBUG: users_data loaded: {users_data}", flush=True)
+
     team_data = load_json(TEAM_MEMBERS_FILE)
+    print(f"🔍 DEBUG: team_data loaded: {team_data}", flush=True)
 
     if 'team_members' not in team_data:
         team_data['team_members'] = []
 
     # Get all usernames from users.json
     user_usernames = [u.get('username') for u in users_data.get('users', [])]
+    print(f"🔍 DEBUG: user_usernames: {user_usernames}", flush=True)
 
     # Update team_members to match users
     team_data['team_members'] = user_usernames
