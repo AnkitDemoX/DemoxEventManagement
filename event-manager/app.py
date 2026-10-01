@@ -31,10 +31,10 @@ os.makedirs(BACKUP_DIR, exist_ok=True)
 os.makedirs(os.path.join(BASE_DIR, 'images'), exist_ok=True)
 
 # Debug: Log file paths on startup
-print(f"✅ App Base Directory: {BASE_DIR}")
-print(f"📁 Events File: {EVENTS_FILE}")
-print(f"📁 Users File: {USERS_FILE}")
-print(f"📁 Leaves File: {LEAVES_FILE}")
+print(f"✅ App Base Directory: {BASE_DIR}", flush=True)
+print(f"📁 Events File: {EVENTS_FILE}", flush=True)
+print(f"📁 Users File: {USERS_FILE}", flush=True)
+print(f"📁 Leaves File: {LEAVES_FILE}", flush=True)
 
 # Melbourne timezone - handles DST automatically
 # AEST (UTC+10): April-September | AEDT (UTC+11): October-March
@@ -95,13 +95,13 @@ def save_json(data, filename):
 
         # Verify file was saved
         if os.path.exists(filename) and os.path.getsize(filename) > 0:
-            print(f"✅ Saved: {filename}")
+            print(f"✅ Saved: {filename}", flush=True)
             return True
         else:
-            print(f"⚠️ WARNING: File {filename} was not saved properly!")
+            print(f"⚠️ WARNING: File {filename} was not saved properly!", flush=True)
             return False
     except Exception as e:
-        print(f"❌ ERROR saving {filename}: {str(e)}")
+        print(f"❌ ERROR saving {filename}: {str(e)}", flush=True)
         import traceback
         traceback.print_exc()
         return False
@@ -357,9 +357,9 @@ def new_event():
         }
 
         events_data['events'].append(new_event)
-        print(f"📝 About to save {len(events_data['events'])} events to {EVENTS_FILE}")
+        print(f"📝 About to save {len(events_data['events'])} events to {EVENTS_FILE}", flush=True)
         result = save_json(events_data, EVENTS_FILE)
-        print(f"💾 Save result: {result}")
+        print(f"💾 Save result: {result}", flush=True)
 
         return redirect(url_for('event_detail', event_id=new_id))
 
@@ -438,9 +438,9 @@ def edit_event(event_id):
         event['status'] = request.form.get('status')
 
         events_data['events'][event_index] = event
-        print(f"✏️ About to save edited event {event_id}")
+        print(f"✏️ About to save edited event {event_id}", flush=True)
         result = save_json(events_data, EVENTS_FILE)
-        print(f"💾 Save result: {result}")
+        print(f"💾 Save result: {result}", flush=True)
 
         return redirect(url_for('event_detail', event_id=event_id))
 
@@ -458,9 +458,9 @@ def delete_event(event_id):
     """Delete event"""
     events_data = load_json(EVENTS_FILE)
     events_data['events'] = [e for e in events_data['events'] if e['id'] != event_id]
-    print(f"🗑️ About to delete event {event_id}")
+    print(f"🗑️ About to delete event {event_id}", flush=True)
     result = save_json(events_data, EVENTS_FILE)
-    print(f"💾 Save result: {result}")
+    print(f"💾 Save result: {result}", flush=True)
 
     return redirect(url_for('dashboard'))
 
@@ -476,9 +476,9 @@ def update_status(event_id):
             event['status'] = status
             break
 
-    print(f"🔄 About to update status for event {event_id} to {status}")
+    print(f"🔄 About to update status for event {event_id} to {status}", flush=True)
     result = save_json(events_data, EVENTS_FILE)
-    print(f"💾 Save result: {result}")
+    print(f"💾 Save result: {result}", flush=True)
     return redirect(url_for('event_detail', event_id=event_id))
 
 # ==================== Debriefing Generator Routes ====================
