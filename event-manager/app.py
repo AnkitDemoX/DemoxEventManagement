@@ -357,7 +357,9 @@ def new_event():
         }
 
         events_data['events'].append(new_event)
-        save_json(events_data, EVENTS_FILE)
+        print(f"📝 About to save {len(events_data['events'])} events to {EVENTS_FILE}")
+        result = save_json(events_data, EVENTS_FILE)
+        print(f"💾 Save result: {result}")
 
         return redirect(url_for('event_detail', event_id=new_id))
 
@@ -436,7 +438,9 @@ def edit_event(event_id):
         event['status'] = request.form.get('status')
 
         events_data['events'][event_index] = event
-        save_json(events_data, EVENTS_FILE)
+        print(f"✏️ About to save edited event {event_id}")
+        result = save_json(events_data, EVENTS_FILE)
+        print(f"💾 Save result: {result}")
 
         return redirect(url_for('event_detail', event_id=event_id))
 
@@ -454,7 +458,9 @@ def delete_event(event_id):
     """Delete event"""
     events_data = load_json(EVENTS_FILE)
     events_data['events'] = [e for e in events_data['events'] if e['id'] != event_id]
-    save_json(events_data, EVENTS_FILE)
+    print(f"🗑️ About to delete event {event_id}")
+    result = save_json(events_data, EVENTS_FILE)
+    print(f"💾 Save result: {result}")
 
     return redirect(url_for('dashboard'))
 
@@ -470,7 +476,9 @@ def update_status(event_id):
             event['status'] = status
             break
 
-    save_json(events_data, EVENTS_FILE)
+    print(f"🔄 About to update status for event {event_id} to {status}")
+    result = save_json(events_data, EVENTS_FILE)
+    print(f"💾 Save result: {result}")
     return redirect(url_for('event_detail', event_id=event_id))
 
 # ==================== Debriefing Generator Routes ====================
