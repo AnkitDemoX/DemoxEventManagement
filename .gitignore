@@ -28,14 +28,6 @@ uploads/
 backups/
 data/
 
-# Data files (managed by app at runtime)
-events.json
-users.json
-admins.json
-team_members.json
-resources.json
-leaves.json
-
 # IDE
 .vscode/
 .idea/
