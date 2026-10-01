@@ -149,6 +149,22 @@ def load_team_members():
     team_data = load_json(TEAM_MEMBERS_FILE)
     return team_data.get('team_members', [])
 
+def sync_team_members():
+    """Sync team_members.json with users from users.json"""
+    users_data = load_json(USERS_FILE)
+    team_data = load_json(TEAM_MEMBERS_FILE)
+
+    if 'team_members' not in team_data:
+        team_data['team_members'] = []
+
+    # Get all usernames from users.json
+    user_usernames = [u.get('username') for u in users_data.get('users', [])]
+
+    # Update team_members to match users
+    team_data['team_members'] = user_usernames
+    save_json(team_data, TEAM_MEMBERS_FILE)
+    print(f"✅ Synced team_members: {user_usernames}", flush=True)
+
 def initialize_files():
     """Initialize JSON files if they don't exist"""
     if not os.path.exists(EVENTS_FILE):
@@ -882,6 +898,16 @@ def add_user():
     users_data['users'].append(new_user)
     save_json(users_data, USERS_FILE)
 
+    # Also add to team_members.json for Demo X Contact dropdown
+    team_data = load_json(TEAM_MEMBERS_FILE)
+    if 'team_members' not in team_data:
+        team_data['team_members'] = []
+
+    username = new_user['username']
+    if username not in team_data['team_members']:
+        team_data['team_members'].append(username)
+        save_json(team_data, TEAM_MEMBERS_FILE)
+
     return redirect(url_for('admin_panel'))
 
 @app.route('/user/<username>/delete', methods=['POST'])
@@ -894,6 +920,12 @@ def delete_user(username):
     users_data = load_json(USERS_FILE)
     users_data['users'] = [u for u in users_data.get('users', []) if u['username'] != username]
     save_json(users_data, USERS_FILE)
+
+    # Also remove from team_members.json
+    team_data = load_json(TEAM_MEMBERS_FILE)
+    if 'team_members' in team_data:
+        team_data['team_members'] = [m for m in team_data['team_members'] if m != username]
+        save_json(team_data, TEAM_MEMBERS_FILE)
 
     return redirect(url_for('admin_panel'))
 
@@ -1325,6 +1357,7 @@ def server_error(error):
 if __name__ == '__main__':
     import io
     initialize_files()
+    sync_team_members()  # Sync team members from users
     # Get port from environment variable, default to 5000 for local development
     port = int(os.environ.get('PORT', 5000))
     # Disable debug mode in production (Render)
